@@ -1,0 +1,20 @@
+{
+  "name": "@solid-medley/camera-context",
+  "version": "0.0.1",
+  "description": "",
+  "homepage": "https://github.com/solid-medley/camera-context/",
+  "scripts": {
+    "dev": "tsup-node --watch",
+    "build": "tsup-node"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@10.22.0",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "solid-js": "^1.9.10",
+    "tsup": "8.5.1"
+  }
+}

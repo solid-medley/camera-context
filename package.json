@@ -1,0 +1,11 @@
+{
+  "name": "@solid-medley/camera-context-workspace",
+  "version": "0.0.0",
+  "keywords": [],
+  "license": "MIT",
+  "packageManager": "pnpm@10.17.1",
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^24.10.1"
+  }
+}
