@@ -1,6 +1,9 @@
 import { createContext, ParentComponent, useContext, children, createSignal } from 'solid-js';
 import { CameraManager } from './camera-manager';
 import { ComponentFrame } from './components/component-frame';
+import { Portal } from 'solid-js/web';
+
+import './camera-context.css'
 
 type VideoConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'echoCancellation'>
 type AudioConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'displaySurface' | 'facingMode'>
@@ -53,26 +56,45 @@ export const CameraContextProvider: ParentComponent<MediaPermissionProps> = (pro
     return Promise.resolve<void>(undefined)
   }
 
+  // This component has a couple of style settings.
+  // This is for development purposes, the prod build will not have this.
   return (
     <cameraContext.Provider value={{
       requestPermission
     }}>
-      <ComponentFrame 
-        name='camera-context'
-        allow={formatPermissions(constraints)}
-        sandbox="allow-same-origin allow-scripts"
-      >
-        <CameraManager constraints={constraints} test={test} />
-      </ComponentFrame>
+      <Portal ref={(element) => {
+          element.id = 'camera-context';
+          if (import.meta.env.PROD) return;
+          element.style.width = 'unset';
+          element.style.height = 'unset';
+        }} useShadow>
+        <ComponentFrame 
+          name='camera-context'
+          ref={(el) => {
+            if(import.meta.env.PROD) return;
+            el.contentDocument!.body!.style.fontFamily = "monospace"
+            el.contentDocument!.body!.style.fontSize = "1.8ex"
+          }}
+          allow={formatPermissions(constraints)}
+          sandbox="allow-same-origin allow-scripts"
+          style={import.meta.env.PROD ? undefined : {
+            width: '100%',
+            border: '1px solid black',
+            "box-sizing": "border-box",
+            margin: "1ex",
+            "overflow-x": "hidden",
+            "overflow-y": "auto"
+          }}
+        >
+          <CameraManager constraints={constraints} test={test} />
+        </ComponentFrame>
+      </Portal>
       {children(() => props.children)()}
     </cameraContext.Provider>
   );
 }
 
 export function useCamera() { return useContext(cameraContext); }
-
-
-
 
 function formatPermissions(constraints: MediaStreamConstraints): string | undefined {
   const allowAudio = constraints ? !!constraints.audio : true

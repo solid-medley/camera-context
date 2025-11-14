@@ -1,0 +1,8 @@
+#camera-context {
+    display:inline-flex;
+    overflow: hidden;
+    height: 0px;
+    width: 0px;
+    margin: 0;
+    padding: 0;
+}

@@ -5,8 +5,6 @@ type CameraManagerProps = {
   test: Accessor<boolean | undefined>
 }
 export const CameraManager: Component<CameraManagerProps> = (props) => {
-
-  
   return <pre>{formatStateInfo(props.constraints, props.test, import.meta.env.DEV)}</pre>
 }
 
