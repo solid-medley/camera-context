@@ -20,6 +20,9 @@ importers:
       '@quick-vite/gh-pages-spa':
         specifier: ^7.0.2
         version: 7.0.2(rollup@4.53.2)(vite@7.2.2(@types/node@24.10.1))
+      '@solid-medley/camera-context':
+        specifier: workspace:^
+        version: link:../lib
       '@solidjs/router':
         specifier: ^0.15.4
         version: 0.15.4(solid-js@1.9.10)
@@ -42,6 +45,9 @@ importers:
       tsup:
         specifier: 8.5.1
         version: 8.5.1(@swc/core@1.15.2)(postcss@8.5.6)(typescript@5.9.3)
+      vite:
+        specifier: ^7.2.2
+        version: 7.2.2(@types/node@24.10.1)
 
 packages:
 

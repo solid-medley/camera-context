@@ -9,14 +9,16 @@
 		"skipLibCheck": true,
 		"isolatedModules": true,
 		"allowJs": true,
+		"jsx": "react-jsx",
+		"jsxImportSource": "solid-js",
+		"moduleResolution": "bundler",
+		"module": "preserve",
 		"outDir": "dist",
 		"lib": [
 			"ES2024.ArrayBuffer",
 			"ES2017.TypedArrays",
-			"ES2024"
-		],
-		"types": [
-			"node"
+			"ES2024",
+			"DOM"
 		],
 		/* Bundler mode */
 		"declaration": true,
@@ -31,6 +33,6 @@
 		"noUncheckedSideEffectImports": true
 	},
 	"include": [
-		"./lib/src/**/*.mts"
+		"./lib/src"
 	]
 }

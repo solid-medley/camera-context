@@ -5,7 +5,8 @@ import { defineConfig } from 'tsup'
 export default defineConfig({
 	entry: [
 		// Include all files because we're not bundling
-		'src/**/*.mts',
+		'src/**/*.ts',
+		'src/**/*.tsx',
 		// Exclude the tests, we don't need those compiled
 		'!src/**/__tests__/**',
 		'!src/**/*.test.*',

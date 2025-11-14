@@ -16,7 +16,8 @@
   "dependencies": {
     "@quick-vite/gh-pages-spa": "^7.0.2",
     "@solidjs/router": "^0.15.4",
-    "solid-js": "^1.9.10"
+    "solid-js": "^1.9.10",
+    "@solid-medley/camera-context": "workspace:^"
   },
   "devDependencies": {
     "vite": "^7.2.2",
