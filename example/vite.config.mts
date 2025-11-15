@@ -5,14 +5,21 @@ import packageJson from './package.json' with { type: 'json' }
 
 export default gitHubSpaConfig(packageJson, {
   plugins: [
-    solid() as any
+    solid()
   ],
-  optimizeDeps: {
-    esbuildOptions: {
-      target: 'esnext'
-    }
-  },
   build: {
+    rollupOptions: {
+      output: {
+        // At least bundle solid-js/web so the iframe doesn't render the main page
+        manualChunks: {
+          'solid': [
+            'solid-js',
+            'solid-js/web',
+            'solid-js/jsx-runtime'
+          ]
+        }
+      }
+    },
     target: 'esnext',
     sourcemap: 'inline'
   }

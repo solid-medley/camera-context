@@ -72,7 +72,7 @@ export const ComponentFrame = <T extends Promise<{ default: (props: TProps) => J
                     })
             } catch(err) {
                         debugger;
-                        console.log(webUrl, err);
+                        console.log(err);
                         throw err;
             }
                 `
