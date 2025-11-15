@@ -1,5 +1,4 @@
 import { createContext, ParentComponent, useContext, children, createSignal } from 'solid-js';
-import { CameraManager } from './camera-manager';
 import { ComponentFrame } from './components/component-frame';
 import { Portal } from 'solid-js/web';
 
@@ -76,7 +75,7 @@ export const CameraContextProvider: ParentComponent<MediaPermissionProps> = (pro
             el.contentDocument!.body!.style.fontSize = "1.8ex"
           }}
           allow={formatPermissions(constraints)}
-          sandbox="allow-same-origin allow-scripts"
+          sandbox="allow-same-origin allow-scripts allow-forms"
           style={import.meta.env.PROD ? undefined : {
             width: '100%',
             border: '1px solid black',
@@ -85,9 +84,9 @@ export const CameraContextProvider: ParentComponent<MediaPermissionProps> = (pro
             "overflow-x": "hidden",
             "overflow-y": "auto"
           }}
-        >
-          <CameraManager constraints={constraints} test={test} />
-        </ComponentFrame>
+          module={() => import('./camera-manager')}
+          moduleProps={{ constraints, test }}
+        />
       </Portal>
       {children(() => props.children)()}
     </cameraContext.Provider>
