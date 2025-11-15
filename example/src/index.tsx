@@ -14,6 +14,4 @@ export const routes = () => <Router base={routeBase()} root={AppRoot}>
 	</PagesReRouter>
 </Router>
 
-// Apparently this is necessary because srcdocced iframes load the currentwindow
-const root = document.getElementById('root');
-if (root) render(routes, root)
+render(routes, document.getElementById('root')!)

@@ -71,8 +71,8 @@ export const CameraContextProvider: ParentComponent<MediaPermissionProps> = (pro
           name='camera-context'
           ref={(el) => {
             if(import.meta.env.PROD) return;
-            el.contentDocument!.body!.style.fontFamily = "monospace"
-            el.contentDocument!.body!.style.fontSize = "1.8ex"
+            el.contentDocument!.body!.parentElement!.style.fontFamily = "monospace"
+            el.contentDocument!.body!.parentElement!.style.fontSize = "1.8ex"
           }}
           allow={formatPermissions(constraints)}
           sandbox="allow-same-origin allow-scripts allow-forms"
