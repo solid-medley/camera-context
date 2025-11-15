@@ -5,6 +5,7 @@ type CameraManagerProps = {
   test: Accessor<boolean | undefined>
 }
 export const CameraManager: Component<CameraManagerProps> = (props) => {
+  
 
   return <>
     <button onClick={() => navigator.mediaDevices.getUserMedia(props.constraints)}>Request</button>

@@ -84,8 +84,10 @@ export const CameraContextProvider: ParentComponent<MediaPermissionProps> = (pro
             "overflow-x": "hidden",
             "overflow-y": "auto"
           }}
-          module={() => import('./camera-manager')}
-          moduleProps={{ constraints, test }}
+          module={{ 
+            component: () => import('./camera-manager'),
+            props: () => ({ constraints, test })
+          }}
         />
       </Portal>
       {children(() => props.children)()}
