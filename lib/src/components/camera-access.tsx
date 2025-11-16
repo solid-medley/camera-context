@@ -3,7 +3,7 @@ import { Sandbox } from "./sandbox";
 import { Portal } from "solid-js/web";
 import type { UserMediaState } from "../data-models/device";
 
-const { forwardEvent, verifyChildOrigin, event } = await import('./sandbox.helpers')
+const { registerParentHandlers, forwardEvent, send } = await import('./sandbox.helpers')
 const wrapperModule = await import('./camera-access.wrapper');
 
 
@@ -48,38 +48,20 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     }
 
     async function requestPermission() {
-        setState(s => ({ ...s, permission: 'pending' }));
-        const result = await new Promise<UserMediaState>(res => {
-            window.addEventListener("message", async (event) => {
-                if (!verifyChildOrigin(uid, event)) return;
-                if (event.data.cb === 'requestPermission') res(event.data.userMediaresult);
-            }, { once: true, capture: true })
-
-            targetWindow()!.postMessage(event('requestPermission'), targetWindow()!.origin)
-        })
-        
+        setState(s => ({ ...s!, permission: 'pending' }));
+        const result = await send(targetWindow()!, 'requestPermission', undefined as never)
         return setState(result)
     }
 
-    onMount(() => {
-        window.addEventListener("message", async (event) => {
-            // This is necessary so dev tools don't hog the event
-            if (!verifyChildOrigin(uid, event)) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                event.stopPropagation();
+    onMount(() => registerParentHandlers(uid, window, abortController.signal, async (event) => {
 
-                return false
-            };
+        const initializing = !state();
 
-            const initializing = !state();
+        // Do nothing until initialized
+        if (initializing) await forwardEvent(event, 'initialized', initialized);
+        if (initializing) return;
 
-            // Do nothing until initialized
-            if (initializing) forwardEvent(event, 'initialized', initialized);
-            if (initializing) return;
-
-        }, { signal: abortController.signal })
-    })
+    }))
 
     return <Portal ref={(element) => {
         element.id = 'camera-access';

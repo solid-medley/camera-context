@@ -1,9 +1,10 @@
+import type { UserMediaState } from "../data-models/device"
 
 
-const registeredEvents = [
-    { name: 'initialized',  type: type() },
-    { name: 'requestPermission',  type: type() },
-] as const
+const events = {
+    initialized: { name: 'initialized',  type: eventType(), returns: returnVoid() },
+    requestPermission: { name: 'requestPermission',  type: eventType(), returns: returnType<UserMediaState>() },
+} as const
 
 
 
@@ -15,20 +16,29 @@ const registeredEvents = [
 
 // ------------------------------------------------------------------------
 
-function type<TData extends unknown = never>() {
-    return undefined as unknown as MessageEvent<TData>
+function eventType<TData extends unknown = never>() {
+    return undefined as unknown as TData
+}
+function returnType<TData extends object>() {
+    return true as unknown as TData
+}
+function returnVoid() {
+    return undefined as void
 }
 
-export type EventName = (typeof registeredEvents[number])['name']
-const eventMap = Object.fromEntries(registeredEvents.map(e => 
-    [e.name as EventName, e as (typeof registeredEvents)[0]]
-)) 
+export type EventName = keyof typeof events
 
-export const event = (name: EventName): { command: EventName } => ({ command: eventMap[name].name })
 export type EventTypes = {
-    [Key in keyof typeof eventMap]: (typeof eventMap)[Key]['type']
+    [Key in keyof typeof events]: (typeof events)[Key]['type']
+}
+export type EventReturnTypes = {
+    [Key in keyof typeof events]: (typeof events)[Key]['returns']
 }
 
-export const matchEventCommand = (event: MessageEvent, command: keyof EventTypes): event is EventTypes[typeof command] => {
-    return event.data.command === command;
+export const getCommandName = (command: keyof EventTypes): string => {
+    return events[command].name
+}
+
+export const hasReturnType = (command: keyof EventTypes) => {
+    return events[command].returns !== undefined
 }

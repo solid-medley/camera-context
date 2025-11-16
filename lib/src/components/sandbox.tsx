@@ -19,8 +19,7 @@ export type SandboxProps<TInitialState extends unknown> =
 type BaseSandboxedProps = {
     abortSignal: AbortSignal
     postMessage: Window['postMessage']
-    console: Console
-    parentOrigin: string,
+    parent: Window,
     uid: string
 };
 export type SandboxedProps<TInitialState extends unknown> = TInitialState extends never
@@ -61,9 +60,7 @@ export const Sandbox = <TInitialState extends unknown = never,>(props: SandboxPr
             Object.assign(windowRef()!, {
                 signal: abortController.signal,
                 initialState,
-                console: console,
-                postMessage: window.postMessage,
-                parentOrigin: window.origin,
+                parent: window,
                 uid
             })
             const sandboxInit = Object.assign(frameRef()!.contentDocument?.createElement('script')!, {
@@ -72,8 +69,12 @@ export const Sandbox = <TInitialState extends unknown = never,>(props: SandboxPr
                 defer: true,
                 textContent: `
                     import sbModule from '${moduleUrl}';
-                    await sbModule({ initialState, signal, postMessage, parentOrigin, uid });
-                    postMessage({ command: 'initialized' }, parentOrigin);
+                    try {
+                        await sbModule({ initialState, signal, parent, uid });
+                    } catch(err) {
+                        debugger;
+                        throw err;
+                    }
                 `
             })
             bodyRef()!.append(sandboxInit);
