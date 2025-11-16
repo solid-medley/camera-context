@@ -1,12 +1,9 @@
-import { createContext, ParentComponent, useContext, children, createSignal } from 'solid-js';
-import { ComponentFrame } from './components/component-frame';
-import { Portal } from 'solid-js/web';
-
-import './camera-context.css'
+import { createContext, ParentComponent, useContext, children, createSignal, createMemo } from 'solid-js';
+import { CameraAccess, CameraAccessState, CameraPermission } from './components/camera-access';
 
 type VideoConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'echoCancellation'>
 type AudioConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'displaySurface' | 'facingMode'>
-type MediaConstraints = Omit<MediaStreamConstraints, 'video' | 'audio' | 'preferCurrentTab'> & {
+export type MediaConstraints = Omit<MediaStreamConstraints, 'video' | 'audio' | 'preferCurrentTab'> & {
   video?: VideoConstraints,
   audio?: false | AudioConstraints
 };
@@ -14,7 +11,7 @@ type MediaPermissionProps = {
   constraints?: MediaConstraints,
 }
 type CameraContext = {
-  requestPermission(): Promise<void>
+  requestPermission(): Promise<CameraPermission>
 };
 
 const defaultConstraints: MediaStreamConstraints = {
@@ -25,7 +22,7 @@ const defaultConstraints: MediaStreamConstraints = {
 }
 
 const cameraContext = createContext<CameraContext>({
-  requestPermission: () => Promise.reject<void>(new Error("Not initialized"))
+  requestPermission: () => Promise.reject<'unknown'>(new Error("Not initialized"))
 })
 
 export const FaultyContext: ParentComponent<{ ctx: CameraContext }> = (props) => {
@@ -45,61 +42,34 @@ function checkBrowserSupport() {
 
 export const CameraContextProvider: ParentComponent<MediaPermissionProps> = (props) => {
 
-  const [test, setTest] = createSignal<boolean>();
   const constraints = props.constraints || defaultConstraints;
 
   if (!checkBrowserSupport()) return <FaultyContext children={props.children} ctx={faultyContext()} />
 
+
+  const [state, setState] = createSignal<CameraAccessState>();
+  const testIllustration = createMemo(() => {
+
+    const currentState = state();
+    if (currentState === undefined) return "initializing";
+    return currentState.permission();
+  }, state)
+
+  
   function requestPermission() {
-    setTest(true)
-    return Promise.resolve<void>(undefined)
+    if (!state()) return Promise.reject<CameraPermission>(new Error('Not yet initialized'))
+    return state()!.requestPermission();
   }
 
-  // This component has a couple of style settings.
-  // This is for development purposes, the prod build will not have this.
   return (
     <cameraContext.Provider value={{
       requestPermission
     }}>
-      <Portal ref={(element) => {
-          element.id = 'camera-context';
-          if (import.meta.env.PROD) return;
-          element.style.width = 'unset';
-          element.style.height = 'unset';
-        }} useShadow>
-        <ComponentFrame 
-          name='camera-context'
-          ref={(el) => {
-            if(import.meta.env.PROD) return;
-            el.contentDocument!.body!.parentElement!.style.fontFamily = "monospace"
-            el.contentDocument!.body!.parentElement!.style.fontSize = "1.8ex"
-          }}
-          allow={formatPermissions(constraints)}
-          sandbox="allow-same-origin allow-scripts allow-forms"
-          style={import.meta.env.PROD ? undefined : {
-            width: '100%',
-            border: '1px solid black',
-            "box-sizing": "border-box",
-            margin: "1ex",
-            "overflow-x": "hidden",
-            "overflow-y": "auto"
-          }}
-          module={{ 
-            component: () => import('./camera-manager'),
-            props: () => ({ constraints, test })
-          }}
-        />
-      </Portal>
+      <CameraAccess constraints={constraints} ref={setState} />
+      {testIllustration()}
       {children(() => props.children)()}
     </cameraContext.Provider>
   );
 }
 
 export function useCamera() { return useContext(cameraContext); }
-
-function formatPermissions(constraints: MediaStreamConstraints): string | undefined {
-  const allowAudio = constraints ? !!constraints.audio : true
-  if (!allowAudio) return "camera 'src'"
-  return "camera 'src'; microphone 'src'"
-}
-

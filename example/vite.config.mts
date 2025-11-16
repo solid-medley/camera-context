@@ -10,12 +10,13 @@ export default gitHubSpaConfig(packageJson, {
   build: {
     rollupOptions: {
       output: {
-        // At least bundle solid-js/web so the iframe doesn't render the main page
         manualChunks: {
-          'solid': [
+          'app': [
             'solid-js',
             'solid-js/web',
-            'solid-js/jsx-runtime'
+            'solid-js/jsx-runtime',
+            '@solidjs/router',
+            '@quick-vite/gh-pages-spa/solidjs'
           ]
         }
       }
