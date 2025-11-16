@@ -19,7 +19,9 @@
 			"ES2024.ArrayBuffer",
 			"ES2017.TypedArrays",
 			"ES2024",
-			"DOM"
+			"DOM",
+			"DOM.AsyncIterable",
+			"DOM.Iterable"
 		],
 		/* Bundler mode */
 		"declaration": true,

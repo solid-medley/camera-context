@@ -1,9 +1,9 @@
-import type { UserMediaState } from "../data-models/device"
+import type { TransferrableUserMediaState } from "../data-models/device"
 
 
 const events = {
     initialized: { name: 'initialized',  type: eventType(), returns: returnVoid() },
-    requestPermission: { name: 'requestPermission',  type: eventType(), returns: returnType<UserMediaState>() },
+    requestPermission: { name: 'requestPermission',  type: eventType(), returns: returnType<TransferrableUserMediaState>() },
 } as const
 
 

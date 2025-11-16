@@ -28,6 +28,8 @@
   "devDependencies": {
     "solid-js": "^1.9.10",
     "tsup": "8.5.1",
-    "vite": "^7.2.2"
+    "vite": "^7.2.2",
+    "@types/dom-mediacapture-transform": "^0.1.11",
+    "@types/dom-webcodecs": "^0.1.17"
   }
 }

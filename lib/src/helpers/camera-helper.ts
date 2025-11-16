@@ -147,6 +147,7 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 		label: '?',
 		facing: 'loading',
 		name: '',
+		stream: undefined
 	}
 
 	if (!mediaStream.active || !mediaStream.getTracks()) {
@@ -156,6 +157,7 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 			label: 'X',
 			facing: 'loading',
 			name: 'X',
+			stream: undefined
 		}
 	}
 
@@ -169,6 +171,7 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 		facing: getBrowserMetadata().platform.type === 'desktop'
 			? 'desktop' :
 			mediaStream.getVideoTracks()[0].getSettings().facingMode as 'user' | 'environment',
+		stream: mediaStream
 	}
 }
 function flatDeviceInput(inputDevice: InputDeviceInfo): FlatMediaDeviceInfo {

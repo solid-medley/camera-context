@@ -6,6 +6,9 @@ import type { UserMediaState } from "../data-models/device";
 const { registerParentHandlers, forwardEvent, send } = await import('./sandbox.helpers')
 const wrapperModule = await import('./camera-access.wrapper');
 
+// TODO figure out what's wrong with the types
+declare const MediaStreamTrackGenerator: any
+
 
 function formatPermissions(constraints: MediaStreamConstraints): string | undefined {
     const allowAudio = constraints ? !!constraints.audio : true
@@ -50,7 +53,25 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     async function requestPermission() {
         setState(s => ({ ...s!, permission: 'pending' }));
         const result = await send(targetWindow()!, 'requestPermission', undefined as never)
-        return setState(result)
+        if (!result.camera?.stream) return setState(result as UserMediaState)
+
+        const generator = new MediaStreamTrackGenerator({ kind: "video" });
+        const writable = generator.writable.getWriter();
+
+        result.camera!.stream!.onmessage = async ({ data: frame }) => {
+            if ((frame as VideoFrame).codedWidth === 0) return frame.close();
+            try{
+                await writable.write(frame);
+                frame.close()
+            } catch( err) {
+                debugger;
+            }
+        };
+        result.camera.stream.start()
+
+        const stream = new MediaStream([generator]);
+        return setState({ ...result, camera: { ...result.camera, stream } })
+
     }
 
     onMount(() => registerParentHandlers(uid, abortController.signal, async (event) => {
