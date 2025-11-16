@@ -21,6 +21,10 @@
   "peerDependencies": {
     "solid-js": "^1.9.10"
   },
+  "dependencies": {
+    "mic-check": "^1.1.0",
+    "bowser": "^2.12.1"
+  },
   "devDependencies": {
     "solid-js": "^1.9.10",
     "tsup": "8.5.1",

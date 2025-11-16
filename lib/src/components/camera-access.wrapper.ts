@@ -1,14 +1,17 @@
 import type { SandboxedModule } from "./sandbox";
+import { requestMediaPermission } from '../helpers/camera-helper'
+import type { CameraAccessConfig } from "./camera-access";
+
 export const url = import.meta.url
+const { verifyParentOrigin, forwardEvent } = await import("./sandbox.helpers");
 
-const { verifyParentOrigin, forwardEvent, event } = await import("./sandbox.helpers");
-
-const cameraAccessWrapper: SandboxedModule<MediaStreamConstraints> = async ({ postMessage, abortSignal, initialState, parentOrigin }) => {
+const cameraAccessWrapper: SandboxedModule<CameraAccessConfig> = async ({ postMessage, abortSignal, initialState, parentOrigin }) => {
    
+    const { constraints, appName } = initialState;
     
     async function requestPermission() {
-        await navigator.mediaDevices.getUserMedia(initialState)
-        postMessage({ cb: 'requestPermission' }, parentOrigin)
+        const userMediaresult = await requestMediaPermission(constraints, true, appName)
+        postMessage({ cb: 'requestPermission', userMediaresult }, parentOrigin)
     }
 
     window.addEventListener("message", async (event) => {

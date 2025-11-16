@@ -38,6 +38,13 @@ importers:
         version: 2.11.10(solid-js@1.9.10)(vite@7.2.2(@types/node@24.10.1))
 
   lib:
+    dependencies:
+      bowser:
+        specifier: ^2.12.1
+        version: 2.12.1
+      mic-check:
+        specifier: ^1.1.0
+        version: 1.1.0
     devDependencies:
       solid-js:
         specifier: ^1.9.10
@@ -746,6 +753,9 @@ packages:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
 
+  bowser@2.12.1:
+    resolution: {integrity: sha512-z4rE2Gxh7tvshQ4hluIT7XcFrgLIQaw9X3A+kTTRdovCz5PMukm/0QC/BKSYPj3omF5Qfypn9O/c5kgpmvYUCw==}
+
   brace-expansion@2.0.2:
     resolution: {integrity: sha512-Jt0vHyM+jmUBqojB7E1NIYadt0vI0Qxjxd2TErW94wDz+E2LAm5vKMXXwg6ZZBTHPuUlDgQHKXvjGBdfcF1ZDQ==}
 
@@ -956,6 +966,9 @@ packages:
   merge-anything@5.1.7:
     resolution: {integrity: sha512-eRtbOb1N5iyH0tkQDAoQ4Ipsp/5qSR79Dzrz8hEPxRX10RWWR/iQXdoKmBSRCThY1Fh5EhISDtpSc93fpxUniQ==}
     engines: {node: '>=12.13'}
+
+  mic-check@1.1.0:
+    resolution: {integrity: sha512-JpTyNPKKnrjfCkNMEzmJ81jnL4vKPnk28DcngrqUHNoHNQC5lkhMoODu5p6r/WUHo40/NtzBZjqMFy1vfhFrig==}
 
   minimatch@9.0.5:
     resolution: {integrity: sha512-G6T0ZX48xgozx7587koeX9Ys2NYy6Gmv//P89sEte9V9whIapMNF4idKxnW2QtCcLiTWlb/wfCabAtAFWhhBow==}
@@ -1796,6 +1809,8 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
+  bowser@2.12.1: {}
+
   brace-expansion@2.0.2:
     dependencies:
       balanced-match: 1.0.2
@@ -2023,6 +2038,10 @@ snapshots:
   merge-anything@5.1.7:
     dependencies:
       is-what: 4.1.16
+
+  mic-check@1.1.0:
+    dependencies:
+      bowser: 2.12.1
 
   minimatch@9.0.5:
     dependencies:

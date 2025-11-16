@@ -1,6 +1,7 @@
 import { Accessor, Component, createSignal, createUniqueId, onCleanup, onMount, Setter } from "solid-js";
 import { Sandbox } from "./sandbox";
 import { Portal } from "solid-js/web";
+import type { UserMediaState } from "../data-models/device";
 
 const { forwardEvent, verifyChildOrigin, event } = await import('./sandbox.helpers')
 const wrapperModule = await import('./camera-access.wrapper');
@@ -12,50 +13,52 @@ function formatPermissions(constraints: MediaStreamConstraints): string | undefi
     return "camera 'src'; microphone 'src'"
 }
 
-export type CameraPermission = 'unknown' | 'pending'
 export type CameraAccessState = {
-
-    permission: Accessor<CameraPermission>
-    requestPermission(): Promise<CameraPermission>
+    state: Accessor<UserMediaState>
+    requestPermission(): Promise<UserMediaState>
 }
-export type CameraAccessProps = {
+export type CameraAccessConfig = {
     constraints: MediaStreamConstraints
+    appName: string
+}
+export type CameraAccessProps = CameraAccessConfig & {
     ref: Setter<CameraAccessState | undefined>
 }
 
-export const CameraAccess: Component<CameraAccessProps> = ({ constraints, ref: setRef }) => {
+export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appName, ref: setRef }) => {
 
     const abortController = new AbortController();
     onCleanup(() => abortController.abort('unmount'));
 
-    const [state, setState] = createSignal<CameraAccessState>();
-    const [permission, setPermission] = createSignal<CameraPermission>('unknown');
+    const [state, setState] = createSignal<UserMediaState>();
 
     const [targetWindow, setTargetWindow] = createSignal<WindowProxy>()
     const uid = createUniqueId()
 
     function initialized() {
-        setPermission('unknown');
         setState({
-            permission,
+            permission: 'unknown',
+            camera: undefined,
+            devices: undefined
+        });
+        setRef({
+            state: state as Accessor<UserMediaState>,
             requestPermission
-        })
-        setRef(state());
+        });
     }
 
     async function requestPermission() {
-        setPermission('pending')
-        await new Promise<void>(res => {
+        setState(s => ({ ...s, permission: 'pending' }));
+        const result = await new Promise<UserMediaState>(res => {
             window.addEventListener("message", async (event) => {
                 if (!verifyChildOrigin(uid, event)) return;
-                if (event.data.cb === 'requestPermission') res();
+                if (event.data.cb === 'requestPermission') res(event.data.userMediaresult);
             }, { once: true, capture: true })
 
             targetWindow()!.postMessage(event('requestPermission'), targetWindow()!.origin)
         })
         
-        // TODO result from postmessage
-        return setPermission('unknown')
+        return setState(result)
     }
 
     onMount(() => {
@@ -82,12 +85,12 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, ref: s
         element.id = 'camera-access';
         element.style.display = 'none';
     }} useShadow>
-        <Sandbox<MediaStreamConstraints>
+        <Sandbox<CameraAccessConfig>
             ref={(el) => setTargetWindow(el!.contentWindow!)}
             allow={formatPermissions(constraints)}
             sandbox="allow-same-origin allow-scripts allow-forms"
             module={wrapperModule.url}
-            initialState={constraints}
+            initialState={{ constraints, appName }}
             uid={uid}
         />
     </Portal>
