@@ -14,9 +14,9 @@ const cameraAccessWrapper: SandboxedModule<CameraAccessConfig> = async ({ parent
         await sendCallback(parent, 'requestPermission', userMediaResult)
     }
 
-    registerChildHandlers(parent.origin, window, abortSignal, async (event) => {
+    registerChildHandlers(parent, abortSignal, async (event) => {
         await forwardEvent(event, 'requestPermission', requestPermission)
-    })
+    });
 
     await send(parent, 'initialized', undefined as never)
 }

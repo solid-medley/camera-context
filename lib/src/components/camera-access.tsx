@@ -53,7 +53,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         return setState(result)
     }
 
-    onMount(() => registerParentHandlers(uid, window, abortController.signal, async (event) => {
+    onMount(() => registerParentHandlers(uid, abortController.signal, async (event) => {
 
         const initializing = !state();
 

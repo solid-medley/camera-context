@@ -58,24 +58,22 @@ export const Sandbox = <TInitialState extends unknown = never,>(props: SandboxPr
             })
             bodyRef()!.append(sandboxedModule);
             Object.assign(windowRef()!, {
-                signal: abortController.signal,
-                initialState,
-                parent: window,
+                props: {
+                    signal: abortController.signal,
+                    initialState,
+                    parent: window,
+                    uid
+                },
                 uid
             })
             const sandboxInit = Object.assign(frameRef()!.contentDocument?.createElement('script')!, {
                 type: 'module',
                 async: true,
                 defer: true,
-                textContent: `
-                    import sbModule from '${moduleUrl}';
-                    try {
-                        await sbModule({ initialState, signal, parent, uid });
-                    } catch(err) {
-                        debugger;
-                        throw err;
-                    }
-                `
+                textContent: [
+                    `import sbModule from '${moduleUrl}'`,
+                    `await sbModule(props)`
+                ].join(import.meta.env.DEV ? '\n' : '; ')
             })
             bodyRef()!.append(sandboxInit);
         })

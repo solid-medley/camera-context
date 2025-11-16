@@ -64,8 +64,8 @@ export async function sendCallback<T extends keyof EventTypes>(
 
 }
 
-export function registerParentHandlers(uid: string, listener: Window, abortSignal: AbortSignal, handler: (event: MessageEvent) => Promise<void> ) {
-    listener.addEventListener("message", async (event) => {
+export function registerParentHandlers(uid: string, abortSignal: AbortSignal, handler: (event: MessageEvent) => Promise<void> ) {
+    window.addEventListener("message", async (event) => {
             // This is necessary so dev tools don't hog the event
         if (!verifyChildOrigin(uid, event)) {
             event.preventDefault();
@@ -79,10 +79,10 @@ export function registerParentHandlers(uid: string, listener: Window, abortSigna
 
     }, { signal: abortSignal })
 }
-export function registerChildHandlers(parentOrigin: string, listener: Window, abortSignal: AbortSignal, handler: (event: MessageEvent) => Promise<void> ) {
-    listener.addEventListener("message", async (event) => {
+export function registerChildHandlers(parent: Window, abortSignal: AbortSignal, handler: (event: MessageEvent) => Promise<void> ) {
+    window.addEventListener("message", async (event) => {
             // This is necessary so dev tools don't hog the event
-        if (!verifyParentOrigin(parentOrigin, event)) {
+        if (!verifyParentOrigin(parent.origin, event)) {
             event.preventDefault();
             event.stopImmediatePropagation();
             event.stopPropagation();
