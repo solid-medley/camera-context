@@ -11,10 +11,18 @@
   "keywords": [],
    "exports": {
     ".": {
-      "import": "./dist/_module.js",
+      "import": "./dist/_module.jsx",
       "types": "./dist/_module.d.mts"
+    },
+    "./components": {
+      "import": "./dist/user-components/_module.jsx",
+      "types": "./dist/user-components/_module.d.mts"
     }
   },
+  "files": [
+    "./dist/_module.js.map",
+    "./dist/user-components/_module.js.map"
+  ],
   "author": "",
   "license": "MIT",
   "packageManager": "pnpm@10.22.0",

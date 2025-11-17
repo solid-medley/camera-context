@@ -1,5 +1,5 @@
 import { Component } from 'solid-js';
-import { useCamera } from '../../../lib/src/camera-context';
+import { useCamera } from '@solid-medley/camera-context';
 
 
 export const TestButton: Component = () => {

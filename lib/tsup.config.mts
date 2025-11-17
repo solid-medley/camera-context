@@ -13,7 +13,6 @@ export default defineConfig({
 		'!src/**/*.spec.*',
 	],
 	format: ['esm'],
-	// Declaration file generating doesn't work, sourcemap is good enough
 	dts: true,
 	clean: true,
 	sourcemap: true,
@@ -24,7 +23,11 @@ export default defineConfig({
 	treeshake: true,
 	splitting: true,
 	minify: false,
+
 	esbuildOptions(options) {
-		options.outbase = './src'
+		options.jsx = "preserve"; // keep JSX untouched
+	},
+	outExtension() {
+		return { js: ".jsx" }; // preserved jsx requires this file extension for vite to import this correctly
 	},
 })
