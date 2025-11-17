@@ -12,9 +12,12 @@ export const TestVideo: Component = () => {
     if (cameraContext.state().permission !== 'granted') return undefined;
     return <>
         <p>{cameraContext.state().camera?.name}</p>
-        <VideoPlayer muted />
+        <VideoPlayer muted style={{
+            width: '100%',
+            "aspect-ratio": '1/1'
+        }}/>
     </>
-    
+
     }, [cameraContext.state]);
 
     return <>{returnData()}</>
