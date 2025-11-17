@@ -13,7 +13,7 @@
       "ES2024",
       "DOM"
     ],
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "jsxImportSource": "solid-js",
     /* Bundler mode */
     "moduleResolution": "bundler",

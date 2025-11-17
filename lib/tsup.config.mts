@@ -22,7 +22,7 @@ export default defineConfig({
 	bundle: true,
 	treeshake: true,
 	splitting: true,
-	minify: false,
+	minify: true,
 
 	esbuildOptions(options) {
 		options.jsx = "preserve"; // keep JSX untouched

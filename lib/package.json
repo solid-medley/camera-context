@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsup-node --watch",
-    "build": "tsup-node"
+    "build": "tsup-node",
+    "build:dev": "tsup-node --no-minify"
   },
   "keywords": [],
    "exports": {
