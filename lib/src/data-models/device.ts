@@ -27,7 +27,7 @@ export type Camera = {
 	stream: MediaStream | undefined
 }
 export type TransferrableCamera = Omit<Camera, 'stream'> & {
-	stream: MessagePort | undefined
+	streamId: string | undefined
 }
 export type FlatMediaDeviceInfo = 
 	& Omit<MediaDeviceInfo, 'toJSON'>

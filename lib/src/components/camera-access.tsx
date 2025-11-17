@@ -2,6 +2,7 @@ import { Accessor, Component, createSignal, createUniqueId, onCleanup, onMount, 
 import { Sandbox } from "./sandbox";
 import { Portal } from "solid-js/web";
 import type { UserMediaState } from "../data-models/device";
+import type { CameraAccessWrapperProps } from './camera-access.wrapper';
 
 const { registerParentHandlers, forwardEvent, send } = await import('./sandbox.helpers')
 const wrapperModule = await import('./camera-access.wrapper');
@@ -54,25 +55,10 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     async function requestPermission() {
         setState(s => ({ ...s!, permission: 'pending' }));
         const result = await send(targetWindow()!, 'requestPermission', undefined as never)
-        if (!result.camera?.stream) return setState(result as UserMediaState)
-
-        // const generator = new MediaStreamTrackGenerator({ kind: "video" });
-        // const writable = generator.writable.getWriter();
-
-        // result.camera!.stream!.onmessage = async ({ data: frame }) => {
-        //     if ((frame as VideoFrame).codedWidth === 0) return frame.close();
-        //     try{
-        //         await writable.write(frame);
-        //         frame.close()
-        //     } catch( err) {
-        //         debugger;
-        //     }
-        // };
-        // result.camera.stream.start()
-
-        // const stream = new MediaStream([generator]);
+        if (!result.camera?.streamId) return setState(result as UserMediaState)
+        
+        if (result.camera.streamId !== stream()?.id) throw new Error('illegal state, incorrect stream id');
         return setState({ ...result, camera: { ...result.camera, stream: stream() } })
-
     }
 
     onMount(() => registerParentHandlers(uid, abortController.signal, async (event) => {
@@ -85,20 +71,16 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
 
     }))
 
-    function test(a: any) {
-        setStream(a)
-    }
-
     return <Portal ref={(element) => {
         element.id = 'camera-access';
         element.style.display = 'none';
     }} useShadow>
-        <Sandbox<CameraAccessConfig>
+        <Sandbox<CameraAccessWrapperProps>
             ref={(el) => setTargetWindow(el!.contentWindow!)}
             allow={formatPermissions(constraints)}
             sandbox="allow-same-origin allow-scripts allow-forms"
             module={wrapperModule.url}
-            initialState={{ constraints, appName, test } as any}
+            moduleProps={{ constraints, appName, postStream: setStream }}
             uid={uid}
         />
     </Portal>

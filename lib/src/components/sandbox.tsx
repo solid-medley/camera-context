@@ -5,13 +5,13 @@ type IFrameProps =
     & Pick<JSX.HTMLAttributes<HTMLIFrameElement>, 'style'>
     & Pick<JSX.CustomAttributes<HTMLIFrameElement>, 'ref'>
 
-export type SandboxProps<TInitialState extends unknown> =
+export type SandboxProps<TProps extends Record<string, unknown>> =
     & Omit<IFrameProps, 'srcdoc' | 'src' | 'onload' | 'onLoad'>
     & {
         /** The module to load inside of the frame  */
         module: string,
         /** The initial configuration for the sandboxed module */
-        initialState: TInitialState
+        moduleProps: TProps
         /** Universal identifier, useful for source matching */
         uid: string
     }
@@ -22,17 +22,16 @@ type BaseSandboxedProps = {
     parent: Window,
     uid: string
 };
-export type SandboxedProps<TInitialState extends unknown> = TInitialState extends never
+export type SandboxedProps<TProps extends Record<string, unknown>> = TProps extends never
     ? BaseSandboxedProps
-    : BaseSandboxedProps & {initialState:TInitialState}
+    : BaseSandboxedProps & { [Key in keyof TProps]:TProps[Key] }
 
-export type SandboxedModule<TInitialState extends unknown> = (props: SandboxedProps<TInitialState>) => Promise<void> | void
+export type SandboxedModule<TProps extends Record<string, unknown>> = (props: SandboxedProps<TProps>) => Promise<void> | void
 
-export const Sandbox = <TInitialState extends unknown = never,>(props: SandboxProps<TInitialState>) => {
+export const Sandbox = <TProps extends Record<string, unknown> = { },>(props: SandboxProps<TProps>) => {
 
-    const { module, initialState, uid, ref: _, ...frameProps } = props;
+    const { module, moduleProps, uid, ref: _, ...frameProps } = props;
     
-
     const abortController = new AbortController();
     onCleanup(() => abortController.abort('unmount'));
 
@@ -60,7 +59,7 @@ export const Sandbox = <TInitialState extends unknown = never,>(props: SandboxPr
             Object.assign(windowRef()!, {
                 props: {
                     signal: abortController.signal,
-                    initialState,
+                    ...moduleProps,
                     parent: window,
                     uid
                 },
@@ -82,6 +81,7 @@ export const Sandbox = <TInitialState extends unknown = never,>(props: SandboxPr
 
     return (
         <iframe
+            {...frameProps}
             srcdoc="<html><body></body></html>"
             onLoad={() => {
                 if (!frameRef()?.contentDocument?.body) return;
@@ -92,7 +92,6 @@ export const Sandbox = <TInitialState extends unknown = never,>(props: SandboxPr
             style={{
                 display: 'none'
             }}
-            {...frameProps}
         />
     )
 }
