@@ -2,8 +2,9 @@ import type { TransferrableUserMediaState } from "../data-models/device"
 
 
 const events = {
-    initialized: { name: 'initialized',  type: eventType(), returns: returnVoid() },
+    initialized: { name: 'initialized',  type: eventType(), returns: returnNothing() },
     requestPermission: { name: 'requestPermission',  type: eventType(), returns: returnType<TransferrableUserMediaState>() },
+    stop: { name: 'stop',  type: eventType(), returns: returnVoid() },
 } as const
 
 
@@ -23,6 +24,9 @@ function returnType<TData extends object>() {
     return true as unknown as TData
 }
 function returnVoid() {
+    return true as unknown as void
+}
+function returnNothing() {
     return undefined as void
 }
 

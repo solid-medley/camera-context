@@ -6,5 +6,8 @@ export const TestButton: Component = () => {
 
     const cameraContext = useCamera();
 
-    return <button disabled={!cameraContext.canRequest()} onClick={cameraContext.requestPermission}>Test</button>
+    return <>
+        <button disabled={!cameraContext.canRequest()} onClick={cameraContext.requestPermission}>Request Cam</button> 
+        <button disabled={!cameraContext.hasPermission('granted')} onClick={cameraContext.stop}>Stop</button> 
+    </>
 }

@@ -1,5 +1,5 @@
 import { createContext, ParentComponent, useContext, children, createSignal, createMemo, Accessor } from 'solid-js';
-import { UserMediaState } from './data-models/device';
+import { MediaPermission, UserMediaState } from './data-models/device';
 import { CameraAccess, CameraAccessState } from './components/camera-access';
 
 type VideoConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'echoCancellation'>
@@ -14,6 +14,8 @@ type CameraContextProps = {
 }
 type CameraContext = {
   requestPermission(): Promise<UserMediaState>
+  stop(): Promise<void>
+  hasPermission(...permissionsToCheck: MediaPermission[]): boolean;
   canRequest: Accessor<boolean>
   faulted:  Accessor<boolean>,
   state: Accessor<UserMediaState>
@@ -28,6 +30,8 @@ const defaultConstraints: MediaStreamConstraints = {
 
 const cameraContext = createContext<CameraContext>({
   requestPermission: () => Promise.reject<UserMediaState>(new Error("Not initialized")),
+  stop: () => Promise.reject<void>(new Error("Not initialized")),
+  hasPermission: () => false,
   canRequest: () => false,
   faulted: () => false,
   state: (): UserMediaState => ({ permission: 'unknown', camera: undefined, devices: undefined })
@@ -62,6 +66,11 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
     return permission
   }, [mediaState])
 
+   function hasPermission(...permissionsToCheck: MediaPermission[]) {
+    if (!mediaState()?.state()?.permission) return false
+    return permissionsToCheck.includes(mediaState()!.state()!.permission!);
+   }
+
   const faulted = createMemo(() => {
     const permission = mediaState()?.state().permission
     if (!permission) return false;
@@ -85,13 +94,19 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
     if (!mediaState()) return Promise.reject<UserMediaState>(new Error('Not yet initialized'))
     return mediaState()!.requestPermission();
   }
+  function stop() {
+    if (!mediaState()) return Promise.reject<void>(new Error('Not yet initialized'))
+    return mediaState()!.stop();
+  }
 
   const state = createMemo(() => mediaState()?.state() ?? cameraContext.defaultValue.state(), 
     [mediaState, () => mediaState()?.state()])
 
   return (
     <cameraContext.Provider value={{
-      requestPermission, 
+      requestPermission,
+      stop, 
+      hasPermission,
       canRequest, 
       faulted,
       state

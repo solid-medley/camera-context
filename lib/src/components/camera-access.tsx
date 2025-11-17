@@ -20,6 +20,7 @@ function formatPermissions(constraints: MediaStreamConstraints): string | undefi
 export type CameraAccessState = {
     state: Accessor<UserMediaState>
     requestPermission(): Promise<UserMediaState>
+    stop(): Promise<void>
 }
 export type CameraAccessConfig = {
     constraints: MediaStreamConstraints
@@ -34,6 +35,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     const abortController = new AbortController();
     onCleanup(() => abortController.abort('unmount'));
 
+    const [active, setActiveState] = createSignal<boolean>(true);
     const [state, setState] = createSignal<UserMediaState>();
     const [stream, setStream] = createSignal<MediaStream>();
 
@@ -48,17 +50,32 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         });
         setRef({
             state: state as Accessor<UserMediaState>,
-            requestPermission
+            requestPermission,
+            stop
         });
     }
 
     async function requestPermission() {
+        debugger;
         setState(s => ({ ...s!, permission: 'pending' }));
         const result = await send(targetWindow()!, 'requestPermission', undefined as never)
         if (!result.camera?.streamId) return setState(result as UserMediaState)
         
         if (result.camera.streamId !== stream()?.id) throw new Error('illegal state, incorrect stream id');
         return setState({ ...result, camera: { ...result.camera, stream: stream() } })
+    }
+    async function stop() {
+        setState(s => ({ ...s!, permission: 'pending' }));
+        // First cleanly stop stream
+        await send(targetWindow()!, 'stop', undefined as never)
+        // Then unmount the component
+        setActiveState(false)
+        // Disabling the camera seems to take a while.
+        const timeOutId = setTimeout(() => {
+            setActiveState(true);
+            setState(s => ({ ...s!, permission: 'unknown' }));
+        }, 600)
+        abortController.signal.addEventListener('abort', () => clearTimeout(timeOutId), { once: true })
     }
 
     onMount(() => registerParentHandlers(uid, abortController.signal, async (event) => {
@@ -75,13 +92,13 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         element.id = 'camera-access';
         element.style.display = 'none';
     }} useShadow>
-        <Sandbox<CameraAccessWrapperProps>
+        {active() && <Sandbox<CameraAccessWrapperProps>
             ref={(el) => setTargetWindow(el!.contentWindow!)}
             allow={formatPermissions(constraints)}
             sandbox="allow-same-origin allow-scripts allow-forms"
             module={wrapperModule.url}
             moduleProps={{ constraints, appName, postStream: setStream }}
             uid={uid}
-        />
+        />}
     </Portal>
 }
