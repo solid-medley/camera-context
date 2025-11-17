@@ -8,6 +8,6 @@ export const TestVideo: Component = () => {
     const cameraContext = useCamera();
     return <>
         <p>{cameraContext.state().camera?.name}</p>
-        <VideoPlayer />
+        <VideoPlayer muted />
     </>
 }

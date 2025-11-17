@@ -1,22 +1,30 @@
-import { Accessor, Component, createEffect, createMemo, createSignal } from 'solid-js';
+import { Accessor, Component, createEffect, createMemo, createSignal, JSX } from 'solid-js';
 import { useCamera } from '../camera-context';
 
-export type VideoPlayerProps = {
-    /** If no stream is provided, the camera context is used */
-    stream?: Accessor<MediaStream | undefined> | undefined
-}
+type VideoElementProps = Omit<JSX.VideoHTMLAttributes<HTMLVideoElement>, 'src' | 'srcObject' | 'ref' | 'loop'> ;
+export type VideoPlayerProps = 
+    & VideoElementProps
+    & {
+        /** If no stream is provided, the camera context is used */
+        stream?: Accessor<MediaStream | undefined> | undefined
+    }
 
 export const VideoPlayer: Component<VideoPlayerProps> = (props) => {
 
+    const { stream, ...elementProps } = props;
+
     const player = createMemo(() => {
-        if (props.stream) return <StreamPlayer stream={props.stream} />
-        return <ContextVideoPlayer />
+        if (stream) return <StreamPlayer stream={stream} elementProps={elementProps} />
+        return <ContextVideoPlayer elementProps={elementProps} />
     }, [props.stream])
 
     return <>{player()}</>
 }
 
-const ContextVideoPlayer: Component = () => {
+export type ContextVideoPlayerProps = {
+    elementProps: VideoElementProps
+}
+const ContextVideoPlayer: Component<ContextVideoPlayerProps> = ({elementProps}) => {
 
     const cameraContext = useCamera();
     const stream = createMemo(
@@ -24,16 +32,16 @@ const ContextVideoPlayer: Component = () => {
         [cameraContext.state]
     )
 
-    return <StreamPlayer stream={stream} />
+    return <StreamPlayer stream={stream} elementProps={elementProps} />
 }
 export type StreamPlayerProps = {
-    /** If no stream is provided, the camera context is used */
     stream: Accessor<MediaStream | undefined>
+    elementProps: VideoElementProps
 }
-const StreamPlayer: Component<StreamPlayerProps> = ({ stream }) => {
+const StreamPlayer: Component<StreamPlayerProps> = ({ stream, elementProps }) => {
 
     const [ref, setRef] = createSignal<HTMLVideoElement>()
-
+    
     createEffect(() => {
         const video = ref();
         if (!video) return;
@@ -53,5 +61,5 @@ const StreamPlayer: Component<StreamPlayerProps> = ({ stream }) => {
         }
     })
 
-    return <video ref={setRef} loop />
+    return <video {...elementProps} ref={setRef} loop />
 }
