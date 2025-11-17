@@ -10,7 +10,7 @@ declare const MediaStreamTrackProcessor: any
 export const url = import.meta.url
 const { registerChildHandlers, forwardEvent, send, sendCallback } = await import("./sandbox.helpers");
 
-const cameraAccessWrapper: SandboxedModule<CameraAccessConfig> = async ({ parent, abortSignal, initialState }) => {
+const cameraAccessWrapper: SandboxedModule<CameraAccessConfig & { test: (a: any) => void}> = async ({ parent, abortSignal, initialState }) => {
 
     const { constraints, appName } = initialState;
 
@@ -18,6 +18,8 @@ const cameraAccessWrapper: SandboxedModule<CameraAccessConfig> = async ({ parent
         const userMediaResult = await requestMediaPermission(constraints, true, appName)
         if (userMediaResult.camera?.stream) {
             const { stream, ...camera }  = userMediaResult.camera!
+            initialState.test(stream)
+
             const track = stream!.getVideoTracks()[0];
 
             const processor = new MediaStreamTrackProcessor({ track });

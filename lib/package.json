@@ -5,7 +5,7 @@
   "homepage": "https://github.com/solid-medley/camera-context/",
   "type": "module",
   "scripts": {
-    "dev": "tsup-node --watch",
+    "dev": "tsup-node --no-minify --watch",
     "build": "tsup-node",
     "build:dev": "tsup-node --no-minify"
   },

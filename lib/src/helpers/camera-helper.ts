@@ -7,6 +7,9 @@ import {
 import { Camera, DeviceResult, FlatMediaDeviceInfo, MediaPermission, UserMediaState } from '../data-models/device'
 import { getBrowserMetadata } from './browser-metadata'
 
+// TODO TEMP: THIS IS JUST TO CHECK THIS ON PHONES QUICKLY
+const TEMP_ERROR_ALERT = true;
+
 function getLocalStorageName(appName: string, key: string) {
 	return `${key}@${appName}`
 }
@@ -94,13 +97,16 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 		// user didn't allow app to access camera or microphone
 		return 'denied'
 	} else if (type === MediaPermissionsErrorType.CouldNotStartVideoSource) {
+		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + err.toString())
 		// camera is in use by another application (Zoom, Skype) or browser tab (Google Meet, Messenger Video)
 		// (mostly Windows specific problem)
 		return 'error:inuse'
 	} else if (name === 'AbortError' && message === "Starting videoinput failed") {
+		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + err.toString())
 		// Failed to start
 		return 'error:inuse'
 	} else if (name === 'NotReadableError') {
+		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + err.toString())
 		// Stream rejected reading data
 		return 'error:inuse'
 	} else if (type === MediaPermissionsErrorType.Generic && message === "Permission dismissed") {
@@ -110,9 +116,11 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 		&& storedCamera) {
 		// This seems to happen when the browser stores a camera that doesn't exist (perhaps the ideas change on software update)
 		// Erase storage and reload
+		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + err.toString())
 		storeCameraId(appName, undefined);
 		return 'error:inuse'
 	} else {
+		if (TEMP_ERROR_ALERT) alert('error+ ' + err.toString())
 		console.error(err)
 		// not all error types are handled by this library
 		return 'error'
@@ -133,6 +141,7 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 				// To solve this we store and redirect.
 				// TODO: see how this works in iframe
 				debugger;
+				if (TEMP_ERROR_ALERT) alert('NOTREADABLE+ ' + error.toString())
 				storeCameraId(appName, requestedCamera)
 				window.location.reload();
 				return undefined

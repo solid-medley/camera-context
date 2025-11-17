@@ -34,6 +34,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     onCleanup(() => abortController.abort('unmount'));
 
     const [state, setState] = createSignal<UserMediaState>();
+    const [stream, setStream] = createSignal<MediaStream>();
 
     const [targetWindow, setTargetWindow] = createSignal<WindowProxy>()
     const uid = createUniqueId()
@@ -55,22 +56,22 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         const result = await send(targetWindow()!, 'requestPermission', undefined as never)
         if (!result.camera?.stream) return setState(result as UserMediaState)
 
-        const generator = new MediaStreamTrackGenerator({ kind: "video" });
-        const writable = generator.writable.getWriter();
+        // const generator = new MediaStreamTrackGenerator({ kind: "video" });
+        // const writable = generator.writable.getWriter();
 
-        result.camera!.stream!.onmessage = async ({ data: frame }) => {
-            if ((frame as VideoFrame).codedWidth === 0) return frame.close();
-            try{
-                await writable.write(frame);
-                frame.close()
-            } catch( err) {
-                debugger;
-            }
-        };
-        result.camera.stream.start()
+        // result.camera!.stream!.onmessage = async ({ data: frame }) => {
+        //     if ((frame as VideoFrame).codedWidth === 0) return frame.close();
+        //     try{
+        //         await writable.write(frame);
+        //         frame.close()
+        //     } catch( err) {
+        //         debugger;
+        //     }
+        // };
+        // result.camera.stream.start()
 
-        const stream = new MediaStream([generator]);
-        return setState({ ...result, camera: { ...result.camera, stream } })
+        // const stream = new MediaStream([generator]);
+        return setState({ ...result, camera: { ...result.camera, stream: stream() } })
 
     }
 
@@ -84,6 +85,10 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
 
     }))
 
+    function test(a: any) {
+        setStream(a)
+    }
+
     return <Portal ref={(element) => {
         element.id = 'camera-access';
         element.style.display = 'none';
@@ -93,7 +98,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
             allow={formatPermissions(constraints)}
             sandbox="allow-same-origin allow-scripts allow-forms"
             module={wrapperModule.url}
-            initialState={{ constraints, appName }}
+            initialState={{ constraints, appName, test } as any}
             uid={uid}
         />
     </Portal>
