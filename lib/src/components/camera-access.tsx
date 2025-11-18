@@ -3,6 +3,7 @@ import { createSandbox, SandBox } from "./sandbox";
 import type { UserMediaState } from "../data-models/device";
 import type { CameraAccessWrapperProps } from './camera-access.wrapper';
 import { forMilliseconds } from "../helpers/timeout";
+import { stopStream } from "../helpers/stream-helper";
 
 const { send } = await import('./sandbox.helpers')
 const wrapperModule = (await import('./camera-access.wrapper')).default;
@@ -58,6 +59,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         if (initial) alert('initial \n' + new Error().stack)
         setState(s => ({ ...s!, permission: 'pending' }));
 
+        setSandbox(await createNameLater())
         const result = await send(sandbox()!.window, 'requestPermission', undefined as never)
 
         if (result.permission.toString() === 'error:inuse:retry' && requestAttempt < 3) {
@@ -95,16 +97,14 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
             await navigator.mediaDevices.getUserMedia({
                 video: true,
                 audio: false
-            }).catch((e) => alert('video ' + e.message))
+            }).then(stopStream).catch((e) => alert('video ' + e.message))
         }
         if (constraints.audio) {
             await navigator.mediaDevices.getUserMedia({
                 video: true,
                 audio: false
-            }).catch((e) => alert('audio ' + e.message))
+            }).then(stopStream).catch((e) => alert('audio ' + e.message))
         }
-
-        setSandbox(await createNameLater());
 
         setState(s => ({ ...s!, permission: 'unknown' }));
         // // Then unmount the component
@@ -117,8 +117,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         // abortController.signal.addEventListener('abort', () => clearTimeout(timeOutId), { once: true })
     }
 
-    onMount(async () => {
-        setSandbox(await createNameLater());
+    onMount(() => {
         setState({
             permission: 'unknown',
             camera: undefined,
