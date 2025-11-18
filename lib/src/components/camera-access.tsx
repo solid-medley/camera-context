@@ -52,25 +52,28 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     });
 
     let requestAttempt = 0;
-    async function requestPermission() {
+    async function requestPermission(initial = true) {
         // ANTI-LOOP
         if (state()?.permission !== 'pending' && state()?.permission !== 'unknown') return state()!
 
+        alert('initial \n'+ console.trace())
         setState(s => ({ ...s!, permission: 'pending' }));
 
         const sandbox = setSandbox(await createNameLater());
         const result = await send(sandbox.window, 'requestPermission', undefined as never)
         
-        if (result.permission.toString() === 'error:inuse:retry') {
+        if (result.permission.toString() === 'error:inuse:retry' && requestAttempt <3) {
             // TODO track retries max 3
             alert('attempt: '+ requestAttempt++);
             await stop();
             debugger;
             await forMilliseconds(500, abortController.signal);
-            await requestPermission();
+            await requestPermission(false);
 
             return state()!;
         }
+
+        requestAttempt = 0;
 
         if (!result.camera?.streamId) return setState(result as UserMediaState)
 
@@ -93,13 +96,13 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
             await navigator.mediaDevices.getUserMedia({
                 video: true,
                 audio: false
-            }).then(stopStream).catch((e) => alert('video ' + e.message))
+            }).catch((e) => alert('video ' + e.message))
         }
         if (constraints.audio) {
             await navigator.mediaDevices.getUserMedia({
                 video: true,
                 audio: false
-            }).then(stopStream).catch((e) => alert('audio ' + e.message))
+            }).catch((e) => alert('audio ' + e.message))
         }
 
         setState(s => ({ ...s!, permission: 'unknown' }));
