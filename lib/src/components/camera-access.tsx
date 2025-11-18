@@ -58,6 +58,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     async function requestPermission(initial = true) {
         // ANTI-LOOP
         if (hasPermission(state, 'denied', 'denied:system', 'error:nosupport', 'granted')) return state()!;
+        if (requestAttempt >= MAX_RETRIES) return state()!;
 
         if (initial) alert('initial \n' + new Error().stack)
         setState(s => ({ ...s!, permission: 'pending' }));
@@ -67,7 +68,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
 
         if (result.permission.toString() === 'error:inuse:retry') {
 
-            if (requestAttempt > MAX_RETRIES) {
+            if (requestAttempt >= MAX_RETRIES) {
                 result.permission = 'error:inuse'
                 return setState(result  as UserMediaState);
             }
@@ -94,22 +95,19 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         await sandbox()!.close();
         setSandbox(undefined)
 
-
-
-
-        // See if retrying with no constraints helps
-        if (constraints.video) {
-            await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: false
-            }).then(stopStream).catch((e) => alert('video ' + e.message))
-        }
-        if (constraints.audio) {
-            await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: false
-            }).then(stopStream).catch((e) => alert('audio ' + e.message))
-        }
+        // // See if retrying with no constraints helps
+        // if (constraints.video) {
+        //     await navigator.mediaDevices.getUserMedia({
+        //         video: true,
+        //         audio: false
+        //     }).then(stopStream).catch((e) => alert('video ' + e.message))
+        // }
+        // if (constraints.audio) {
+        //     await navigator.mediaDevices.getUserMedia({
+        //         video: true,
+        //         audio: false
+        //     }).then(stopStream).catch((e) => alert('audio ' + e.message))
+        // }
 
         setState(s => ({ ...s!, permission: 'unknown' }));
         // // Then unmount the component
@@ -136,6 +134,11 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
             requestPermission,
             stop
         });
+    })
+
+    onCleanup(async () => {
+        alert('cleanup')
+        await stop();
     })
 
     // onMount(() => registerParentHandlers(uid, abortController.signal, async (event) => {
