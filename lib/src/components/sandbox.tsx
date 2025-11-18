@@ -44,7 +44,7 @@ export async function createSandbox<TModuleProps extends Record<string, unknown>
            
             Object.assign(contentWindow, {
                 props: {
-                    signal: abortController.signal,
+                    abortSignal: abortController.signal,
                     ...moduleProps,
                     parent: window,
                     uid
