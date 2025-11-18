@@ -50,15 +50,16 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         }
     });
 
+    let requestAttempt = 0;
     async function requestPermission() {
         setState(s => ({ ...s!, permission: 'pending' }));
 
-        setSandbox(await createNameLater());
-        const result = await send(sandbox()!.window, 'requestPermission', undefined as never)
+        const sandbox = setSandbox(await createNameLater());
+        const result = await send(sandbox.window, 'requestPermission', undefined as never)
         
         if (result.permission.toString() === 'error:inuse:retry') {
             // TODO track retries max 3
-
+            alert('attempt: '+ requestAttempt++);
             await stop();
             await forMilliseconds(500, abortController.signal);
             await requestPermission();
