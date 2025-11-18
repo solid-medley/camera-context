@@ -1,17 +1,15 @@
-import type { SandboxedModule } from "./sandbox";
 import { requestMediaPermission } from '../helpers/camera-helper'
 import type { CameraAccessConfig } from "./camera-access";
 import { TransferrableUserMediaState } from "../data-models/device";
+import { sandboxModule } from "./sandbox.module";
 
-const { registerChildHandlers, forwardEvent, send, sendCallback } = await import("./sandbox.helpers");
+const { registerChildHandlers, forwardEvent, sendCallback } = await import("./sandbox.helpers");
 
-export const url = import.meta.url
 export type CameraAccessWrapperProps = 
 & {
     [Key in keyof CameraAccessConfig]: CameraAccessConfig[Key]
 }
 & {
-    // TODO correct return type
     /** 
      * Because a stream isn't StructureCloneable we just post it back to the parent window. 
      * 
@@ -21,7 +19,12 @@ export type CameraAccessWrapperProps =
     postStream(stream: MediaStream | undefined): void 
 }
 
-const cameraAccessWrapper: SandboxedModule<CameraAccessWrapperProps> = async ({ parent, abortSignal, constraints, appName, postStream }) => {
+export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ parent, abortSignal, constraints, appName, postStream }) => {
+
+    registerChildHandlers(parent, abortSignal, async (event) => {
+        await forwardEvent(event, 'requestPermission', requestPermission)
+        await forwardEvent(event, 'stop', stop)
+    })
 
     let mediaStream: MediaStream | undefined = undefined;
     async function requestPermission() {
@@ -64,13 +67,4 @@ const cameraAccessWrapper: SandboxedModule<CameraAccessWrapperProps> = async ({ 
 
         await sendCallback(parent, 'stop', void 0);
     }
-
-    registerChildHandlers(parent, abortSignal, async (event) => {
-        await forwardEvent(event, 'requestPermission', requestPermission)
-        await forwardEvent(event, 'stop', stop)
-    });
-
-    await send(parent, 'initialized', undefined as never)
-}
-
-export default cameraAccessWrapper;
+});

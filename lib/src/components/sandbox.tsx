@@ -1,97 +1,96 @@
-import { createEffect, createMemo, createSignal, JSX, onCleanup } from 'solid-js';
+import type { JSX } from 'solid-js';
 
 type IFrameProps =
     & Omit<JSX.IframeHTMLAttributes<HTMLIFrameElement>, keyof JSX.HTMLAttributes<HTMLIFrameElement>>
-    & Pick<JSX.HTMLAttributes<HTMLIFrameElement>, 'style'>
-    & Pick<JSX.CustomAttributes<HTMLIFrameElement>, 'ref'>
 
 export type SandboxProps<TProps extends Record<string, unknown>> =
     & Omit<IFrameProps, 'srcdoc' | 'src' | 'onload' | 'onLoad'>
     & {
-        /** The module to load inside of the frame  */
-        module: string,
         /** The initial configuration for the sandboxed module */
-        moduleProps: TProps
+        props: TProps
         /** Universal identifier, useful for source matching */
-        uid: string
+        uid: string,
+
+        abortSignal: AbortSignal
     }
 
-type BaseSandboxedProps = {
-    abortSignal: AbortSignal
-    postMessage: Window['postMessage']
-    parent: Window,
-    uid: string
-};
-export type SandboxedProps<TProps extends Record<string, unknown>> = TProps extends never
-    ? BaseSandboxedProps
-    : BaseSandboxedProps & { [Key in keyof TProps]:TProps[Key] }
+export type SandBox = {
+    window: WindowProxy,
+    close(): Promise<void>
+}
+export async function createSandbox<TModuleProps extends Record<string, unknown>>(
+    moduleUrl:string, sandboxProps: SandboxProps<TModuleProps>
+) {
 
-export type SandboxedModule<TProps extends Record<string, unknown>> = (props: SandboxedProps<TProps>) => Promise<void> | void
+    const { uid, props: moduleProps, abortSignal: parentAbortSignal, ...frameProps } = sandboxProps;
 
-export const Sandbox = <TProps extends Record<string, unknown> = { },>(props: SandboxProps<TProps>) => {
-
-    const { module, moduleProps, uid, ref: _, ...frameProps } = props;
-    
+    const id = moduleUrl.split('/').at(-1)?.replace('.jsx', '').split('?')[0];
     const abortController = new AbortController();
-    onCleanup(() => abortController.abort('unmount'));
+    parentAbortSignal.addEventListener('abort', abortController.abort, { once: true, capture: true });
 
-    const [frameRef, setFrameRef] = createSignal<HTMLIFrameElement>();
-    const [bodyRef, setBodyRef] = createSignal<HTMLBodyElement>();
-    const [windowRef, setWindowRef] = createSignal<Window>();
-    const [runOnceId, setRunOnce] = createSignal<string>();
-    const runOnce = createMemo(() => !!runOnceId() && !!frameRef() && !!bodyRef(), [runOnceId])
+    return new Promise<SandBox>((resolve, reject) => {
 
-    createEffect(() => {
-        if (runOnce()) return;
-        if (!bodyRef() || !windowRef()) return;
-        if (typeof props.ref === 'function') props.ref?.(frameRef()!)
-        if (!!props.ref) props.ref = frameRef();
+        let iframe: HTMLIFrameElement = Object.assign(document.createElement('iframe'), frameProps, {
+            id,
+            srcdoc: "<html><body></body></html>"
+        });
 
-        queueMicrotask(async () => {
+        // This doesn't work with Object.assign
+        iframe.style.display = 'none';
 
-            const moduleUrl = import.meta.resolve(module!);
-            setRunOnce(moduleUrl);
-            const sandboxedModule = Object.assign(frameRef()!.contentDocument?.createElement('script')!, {
-                type: 'module',
-                src: moduleUrl
-            })
-            bodyRef()!.append(sandboxedModule);
-            Object.assign(windowRef()!, {
+        iframe.addEventListener('load', () => {
+            const contentWindow = iframe.contentWindow!;
+            const contentDocument = iframe.contentDocument!;
+           
+            Object.assign(contentWindow, {
                 props: {
                     signal: abortController.signal,
                     ...moduleProps,
                     parent: window,
                     uid
                 },
-                uid
+                uid,
+                callback(err: Error | undefined) {
+                    if (err) {
+                        iframe?.remove();
+                        return reject(err);
+                    }
+                    
+                    resolve({
+                        window: contentWindow,
+                        close: () => new Promise<void>(res => {
+                            abortController.abort('retry');
+                            iframe.addEventListener('load', () => {
+                                iframe?.remove();
+                                iframe = undefined! as HTMLIFrameElement;
+                                res()
+                            }, { once: true, signal: parentAbortSignal })
+                            iframe.contentWindow!.location.reload()
+                        })
+                    })
+                }
             })
-            const sandboxInit = Object.assign(frameRef()!.contentDocument?.createElement('script')!, {
+
+            // const sandboxedModule = Object.assign(frameRef()!.contentDocument?.createElement('script')!, {
+            //     type: 'module',
+            //     src: moduleUrl
+            // })
+            // bodyRef()!.append(sandboxedModule);
+            
+            const sandboxInit = Object.assign(contentDocument.createElement('script')!, {
                 type: 'module',
                 async: true,
                 defer: true,
                 textContent: [
-                    `import sbModule from '${moduleUrl}'`,
-                    `await sbModule(props)`
-                ].join(import.meta.env.DEV ? '\n' : '; ')
+                    `import sbModule from '${moduleUrl}';`,
+                    `await sbModule(props)`,
+                    `.then(callback)`,
+                    `.catch(callback);`
+                ].join(import.meta.env.DEV ? '\n' : '')
             })
-            bodyRef()!.append(sandboxInit);
-        })
+            contentDocument.body.append(sandboxInit);
+        }, { once: true, signal: abortController.signal })
 
-    }, [runOnce])
-
-    return (
-        <iframe
-            {...frameProps}
-            srcdoc="<html><body></body></html>"
-            onLoad={() => {
-                if (!frameRef()?.contentDocument?.body) return;
-                setBodyRef(frameRef()?.contentDocument?.body as HTMLBodyElement)
-                setWindowRef(frameRef()?.contentWindow!)
-            }}
-            ref={setFrameRef}
-            style={{
-                display: 'none'
-            }}
-        />
-    )
+        window.document.body.append(iframe)
+    })
 }

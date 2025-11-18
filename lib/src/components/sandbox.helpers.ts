@@ -80,6 +80,7 @@ export function registerParentHandlers(uid: string, abortSignal: AbortSignal, ha
     }, { signal: abortSignal })
 }
 export function registerChildHandlers(parent: Window, abortSignal: AbortSignal, handler: (event: MessageEvent) => Promise<void> ) {
+    
     window.addEventListener("message", async (event) => {
             // This is necessary so dev tools don't hog the event
         if (!verifyParentOrigin(parent.origin, event)) {

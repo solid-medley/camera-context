@@ -1,21 +1,16 @@
 import { Accessor, Component, createSignal, createUniqueId, onCleanup, onMount, Setter } from "solid-js";
-import { Sandbox } from "./sandbox";
-import { Portal } from "solid-js/web";
+import { createSandbox, SandBox } from "./sandbox";
 import type { UserMediaState } from "../data-models/device";
 import type { CameraAccessWrapperProps } from './camera-access.wrapper';
 
-const { registerParentHandlers, forwardEvent, send } = await import('./sandbox.helpers')
-const wrapperModule = await import('./camera-access.wrapper');
+const { send } = await import('./sandbox.helpers')
+const wrapperModule = (await import('./camera-access.wrapper')).default;
 
-// TODO figure out what's wrong with the types
-declare const MediaStreamTrackGenerator: any
-
-
-function formatPermissions(constraints: MediaStreamConstraints): string | undefined {
-    const allowAudio = constraints ? !!constraints.audio : true
-    if (!allowAudio) return "camera 'src'"
-    return "camera 'src'; microphone 'src'"
-}
+// function formatPermissions(constraints: MediaStreamConstraints): string | undefined {
+//     const allowAudio = constraints ? !!constraints.audio : true
+//     if (!allowAudio) return "camera 'src'"
+//     return "camera 'src'; microphone 'src'"
+// }
 
 export type CameraAccessState = {
     state: Accessor<UserMediaState>
@@ -35,14 +30,56 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     const abortController = new AbortController();
     onCleanup(() => abortController.abort('unmount'));
 
-    const [active, setActiveState] = createSignal<boolean>(true);
+    // const [active, setActiveState] = createSignal<boolean>(true);
     const [state, setState] = createSignal<UserMediaState>();
     const [stream, setStream] = createSignal<MediaStream>();
 
-    const [targetWindow, setTargetWindow] = createSignal<WindowProxy>()
+    const [sandbox, setSandbox] = createSignal<SandBox>()
     const uid = createUniqueId()
 
-    function initialized() {
+    const createNameLater = () => createSandbox<CameraAccessWrapperProps>(wrapperModule.url, {
+        uid,
+        abortSignal: abortController.signal,
+        // allow: formatPermissions(constraints),
+        // sandbox: "allow-same-origin allow-scripts allow-forms",
+        props: {
+            appName,
+            constraints,
+            postStream: setStream,
+        }
+    });
+
+    async function requestPermission() {
+        setState(s => ({ ...s!, permission: 'pending' }));
+        const result = await send(sandbox()!.window, 'requestPermission', undefined as never)
+        if (!result.camera?.streamId) return setState(result as UserMediaState)
+        
+        if (result.camera.streamId !== stream()?.id) throw new Error('illegal state, incorrect stream id');
+        return setState({ ...result, camera: { ...result.camera, stream: stream() } })
+    }
+    async function stop() {
+        setState(s => ({ ...s!, permission: 'pending' }));
+        // First cleanly stop stream
+        await send(sandbox()!.window, 'stop', undefined as never)
+        // Then recreate the sandbox
+        await sandbox()!.close();
+        setSandbox(await createNameLater());
+        setState(s => ({ ...s!, permission: 'unknown' }));
+        // // Then unmount the component
+        // // setActiveState(false)
+        // // Disabling the camera seems to take a while.
+        // const timeOutId = setTimeout(() => {
+        //     // setActiveState(true);
+        //     setState(s => ({ ...s!, permission: 'unknown' }));
+        // }, 600)
+        // abortController.signal.addEventListener('abort', () => clearTimeout(timeOutId), { once: true })
+    }
+
+    onMount(async () => {
+
+        const sandbox = await createNameLater()
+
+        setSandbox(sandbox)
         setState({
             permission: 'unknown',
             camera: undefined,
@@ -53,52 +90,31 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
             requestPermission,
             stop
         });
-    }
+    })
 
-    async function requestPermission() {
-        debugger;
-        setState(s => ({ ...s!, permission: 'pending' }));
-        const result = await send(targetWindow()!, 'requestPermission', undefined as never)
-        if (!result.camera?.streamId) return setState(result as UserMediaState)
-        
-        if (result.camera.streamId !== stream()?.id) throw new Error('illegal state, incorrect stream id');
-        return setState({ ...result, camera: { ...result.camera, stream: stream() } })
-    }
-    async function stop() {
-        setState(s => ({ ...s!, permission: 'pending' }));
-        // First cleanly stop stream
-        await send(targetWindow()!, 'stop', undefined as never)
-        // Then unmount the component
-        setActiveState(false)
-        // Disabling the camera seems to take a while.
-        const timeOutId = setTimeout(() => {
-            setActiveState(true);
-            setState(s => ({ ...s!, permission: 'unknown' }));
-        }, 600)
-        abortController.signal.addEventListener('abort', () => clearTimeout(timeOutId), { once: true })
-    }
+    // onMount(() => registerParentHandlers(uid, abortController.signal, async (event) => {
 
-    onMount(() => registerParentHandlers(uid, abortController.signal, async (event) => {
+    //     const initializing = !state();
 
-        const initializing = !state();
+    //     // Do nothing until initialized
+    //     if (initializing) await forwardEvent(event, 'initialized', initialized);
+    //     if (initializing) return;
 
-        // Do nothing until initialized
-        if (initializing) await forwardEvent(event, 'initialized', initialized);
-        if (initializing) return;
+    // }))
 
-    }))
+    // return <Portal ref={(element) => {
+    //     element.id = 'camera-access';
+    //     element.style.display = 'none';
+    // }} useShadow>
+    //     {active() && <Sandbox<CameraAccessWrapperProps>
+    //         ref={(el) => setTargetWindow(el!.contentWindow!)}
+    //         allow={formatPermissions(constraints)}
+    //         sandbox="allow-same-origin allow-scripts allow-forms"
+    //         module={wrapperModule.url}
+    //         moduleProps={{ constraints, appName, postStream: setStream }}
+    //         uid={uid}
+    //     />}
+    // </Portal>
 
-    return <Portal ref={(element) => {
-        element.id = 'camera-access';
-        element.style.display = 'none';
-    }} useShadow>
-        {active() && <Sandbox<CameraAccessWrapperProps>
-            ref={(el) => setTargetWindow(el!.contentWindow!)}
-            allow={formatPermissions(constraints)}
-            sandbox="allow-same-origin allow-scripts allow-forms"
-            module={wrapperModule.url}
-            moduleProps={{ constraints, appName, postStream: setStream }}
-            uid={uid}
-        />}
-    </Portal>
+    return undefined
 }
