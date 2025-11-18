@@ -54,6 +54,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     async function requestPermission() {
         // ANTI-LOOP
         if (state()?.permission !== 'pending' && state()?.permission !== 'unknown') return state()!
+
         setState(s => ({ ...s!, permission: 'pending' }));
 
         const sandbox = setSandbox(await createNameLater());
@@ -63,6 +64,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
             // TODO track retries max 3
             alert('attempt: '+ requestAttempt++);
             await stop();
+            debugger;
             await forMilliseconds(500, abortController.signal);
             await requestPermission();
 
@@ -83,18 +85,18 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         await sandbox()!.close();
 
         // See if retrying with no constraints helps
-        if (constraints.video) {
-            await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: false
-            }).catch((e) => alert('video ' + e.message))
-        }
-        if (constraints.audio) {
-            await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: false
-            }).catch((e) => alert('video ' + e.message))
-        }
+        // if (constraints.video) {
+        //     await navigator.mediaDevices.getUserMedia({
+        //         video: true,
+        //         audio: false
+        //     }).catch((e) => alert('video ' + e.message))
+        // }
+        // if (constraints.audio) {
+        //     await navigator.mediaDevices.getUserMedia({
+        //         video: true,
+        //         audio: false
+        //     }).catch((e) => alert('video ' + e.message))
+        // }
 
         setState(s => ({ ...s!, permission: 'unknown' }));
         // // Then unmount the component
