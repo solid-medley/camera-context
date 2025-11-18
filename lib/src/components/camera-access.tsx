@@ -62,7 +62,9 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
             await stop();
             await forMilliseconds(500, abortController.signal);
             await requestPermission();
-            return;
+            
+            result.permission === 'pending'
+            return setState(result as UserMediaState)
         }
 
         if (!result.camera?.streamId) return setState(result as UserMediaState)
