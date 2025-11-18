@@ -55,6 +55,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
 
     let requestAttempt = 0;
     async function requestPermission(initial = true) {
+        if (initial) requestAttempt = 0;
         // ANTI-LOOP
         if (hasPermission(state, 'denied', 'denied:system', 'error:nosupport', 'granted')) return state()!;
         if (requestAttempt >= MAX_RETRIES) return state()!;
@@ -67,6 +68,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
 
         if (result.permission.toString() === 'error:inuse:retry') {
 
+            requestAttempt ++;
             if (requestAttempt >= MAX_RETRIES) {
                 result.permission = 'error:inuse'
                 return setState(result  as UserMediaState);
