@@ -134,6 +134,8 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 		// This seems to happen when the browser stores a camera that doesn't exist (perhaps the ideas change on software update)
 		// Erase storage and reload
 		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + errorToString(err))
+		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + JSON.stringify(err, undefined, 2))
+			debugger;
 		storeCameraId(appName, undefined);
 		return 'error:inuse'
 	} else {
