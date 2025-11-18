@@ -59,13 +59,13 @@ export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ par
             await navigator.mediaDevices.getUserMedia({
                 video: true,
                 audio: false
-            }).then(stopStream).catch((e) => alert('video ' + e.message))
+            }).catch((e) => alert('video ' + e.message))
         }
         if (constraints.audio) {
             await navigator.mediaDevices.getUserMedia({
                 video: true,
                 audio: false
-            }).then(stopStream).catch((e) => alert('video ' + e.message))
+            }).catch((e) => alert('video ' + e.message))
         }
 
         await sendCallback(parent, 'stop', void 0);
