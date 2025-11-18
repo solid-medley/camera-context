@@ -1,4 +1,5 @@
 import type { JSX } from 'solid-js';
+import { forMilliseconds } from '../helpers/timeout';
 
 type IFrameProps =
     & Omit<JSX.IframeHTMLAttributes<HTMLIFrameElement>, keyof JSX.HTMLAttributes<HTMLIFrameElement>>
@@ -60,9 +61,17 @@ export async function createSandbox<TModuleProps extends Record<string, unknown>
                         window: contentWindow,
                         close: () => new Promise<void>(res => {
                             abortController.abort('retry');
-                            iframe.addEventListener('load', () => {
+                            iframe.addEventListener('load', async () => {
+                                iframe.removeAttribute('srcdoc');
+                                iframe.src = 'about:blank?'+ Date.now()
+                                iframe.contentWindow?.location.assign(iframe.src)
+
+                                await forMilliseconds(10, parentAbortSignal)
+                                iframe?.contentWindow?.close();
                                 iframe?.remove();
                                 iframe = undefined! as HTMLIFrameElement;
+
+                                await forMilliseconds(10, parentAbortSignal)
                                 res()
                             }, { once: true, signal: parentAbortSignal })
                             iframe.contentWindow!.location.reload()
