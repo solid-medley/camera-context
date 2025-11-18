@@ -29,6 +29,13 @@ export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ par
     let mediaStream: MediaStream | undefined = undefined;
     async function requestPermission() {
         const userMediaResult = await requestMediaPermission(constraints, true, appName)
+        if (userMediaResult.permission.toString() === 'error:inuse:retry') {
+            // TODO track retries max 3
+            await stop();
+            await requestPermission();
+            return;
+        }
+
         if (userMediaResult.camera?.stream) {
             const { stream, ...camera }  = userMediaResult.camera!
             

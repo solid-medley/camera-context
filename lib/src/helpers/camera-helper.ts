@@ -123,6 +123,12 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 	} else if (type === MediaPermissionsErrorType.Generic && message === "Permission dismissed") {
 		// prompt dismissed by user
 		return 'unknown'
+	} else if (name === "OverconstrainedError" && ((err as OverconstrainedError).constraint.toLowerCase() === "Generic")
+		&& storedCamera) {
+		// This seems to happen when the camera has just stopped, either by stopping the streams or refreshing the page.
+		// This may warrant a retry
+		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + errorToString(err))
+		return 'error:inuse:retry'
 	} else if (name === "OverconstrainedError" && ((err as OverconstrainedError).constraint === "deviceId" || message === "")
 		&& storedCamera) {
 		// This seems to happen when the browser stores a camera that doesn't exist (perhaps the ideas change on software update)
@@ -152,10 +158,9 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 				// To solve this we store and redirect.
 				// TODO: see how this works in iframe
 				debugger;
-				if (TEMP_ERROR_ALERT) alert('NOTREADABLE+ ' + error.toString())
+				if (TEMP_ERROR_ALERT) alert('NOTREADABLE+ ' + errorToString(error))
 				storeCameraId(appName, requestedCamera)
-				window.location.reload();
-				return undefined
+				throw error
 			}
 			const result = handleMediaPermissionsError(error as MediaPermissionsError, appName, storedCamera)
 			if (result === 'error') throw error
