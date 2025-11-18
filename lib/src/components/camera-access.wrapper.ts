@@ -33,9 +33,8 @@ export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ par
         if (userMediaResult.permission.toString() === 'error:inuse:retry') {
             // TODO track retries max 3
             
-			debugger;
             await stop();
-            await forMilliseconds(200, abortSignal);
+            await forMilliseconds(500, abortSignal);
             await requestPermission();
             return;
         }
