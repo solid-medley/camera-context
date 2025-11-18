@@ -2,6 +2,7 @@ import { requestMediaPermission } from '../helpers/camera-helper'
 import type { CameraAccessConfig } from "./camera-access";
 import { TransferrableUserMediaState } from "../data-models/device";
 import { sandboxModule } from "./sandbox.module";
+import { forMilliseconds } from '../helpers/timeout';
 
 const { registerChildHandlers, forwardEvent, sendCallback } = await import("./sandbox.helpers");
 
@@ -34,6 +35,7 @@ export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ par
             
 			debugger;
             await stop();
+            await forMilliseconds(200, abortSignal);
             await requestPermission();
             return;
         }
