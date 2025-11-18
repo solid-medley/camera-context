@@ -3,6 +3,7 @@ import { createSandbox, SandBox } from "./sandbox";
 import type { UserMediaState } from "../data-models/device";
 import type { CameraAccessWrapperProps } from './camera-access.wrapper';
 import { forMilliseconds } from "../helpers/timeout";
+import { stopStream } from "../helpers/stream-helper";
 
 const { send } = await import('./sandbox.helpers')
 const wrapperModule = (await import('./camera-access.wrapper')).default;
@@ -83,6 +84,23 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         await send(sandbox()!.window, 'stop', undefined as never)
         // Then close the sandbox
         await sandbox()!.close();
+
+        
+
+
+        // See if retrying with no constraints helps
+        if (constraints.video) {
+            await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            }).then(stopStream).catch((e) => alert('video ' + e.message))
+        }
+        if (constraints.audio) {
+            await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            }).then(stopStream).catch((e) => alert('audio ' + e.message))
+        }
 
         setState(s => ({ ...s!, permission: 'unknown' }));
         // // Then unmount the component

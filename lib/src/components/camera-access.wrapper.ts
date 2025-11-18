@@ -4,6 +4,7 @@ import { TransferrableUserMediaState } from "../data-models/device";
 import { sandboxModule } from "./sandbox.module";
 
 const { registerChildHandlers, forwardEvent, sendCallback } = await import("./sandbox.helpers");
+const { stopStream } = await import("../helpers/stream-helper");
 
 export type CameraAccessWrapperProps =
     & {
@@ -53,39 +54,6 @@ export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ par
         stopStream(mediaStream)
         mediaStream = undefined;
 
-
-        // See if retrying with no constraints helps
-        if (constraints.video) {
-            await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: false
-            }).catch((e) => alert('video ' + e.message))
-        }
-        if (constraints.audio) {
-            await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: false
-            }).catch((e) => alert('video ' + e.message))
-        }
-
         await sendCallback(parent, 'stop', void 0);
     }
 });
-
-function stopStream(stream: MediaStream | null | undefined) {
-    if (!stream) return;
-
-    for (const track of stream.getTracks()) {
-        if (track.readyState === 'ended') continue
-        track.stop()
-        track.enabled = false
-        stream.removeTrack(track);
-    }
-
-    // Backwards compatibility
-    try {
-        if ('stop' in stream) (stream as any).stop()
-    } catch {
-        //
-    }
-}
