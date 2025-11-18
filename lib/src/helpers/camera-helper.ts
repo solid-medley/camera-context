@@ -9,7 +9,7 @@ import { getBrowserMetadata } from './browser-metadata'
 
 // TODO TEMP: THIS IS JUST TO CHECK THIS ON PHONES QUICKLY
 const TEMP_ERROR_ALERT = true;
-function errorToString(err: Error | string | MediaPermissionsError) {
+function errorToString(err: Error | string | MediaPermissionsError, constraints?: MediaStreamConstraints) {
 if (typeof err == 'string') return err;
 
   let name = err.name;
@@ -18,6 +18,7 @@ if (typeof err == 'string') return err;
   msg = msg === undefined ? "" : `${msg}`;
 
   if ('type' in err) name+='|'+err.type
+  const cc = constraints === undefined ? undefined : "\n========================================\n" + JSON.stringify(constraints)
   return `[${name}]: ${msg}`  + '\n' + JSON.stringify(err, undefined, 2);
 };
 
@@ -89,7 +90,7 @@ export async function requestMediaPermission(
 				await getCamera(combineConstraints(constraints, getStoredCameraId(appName)), appName)
 			] as RequestResult
 		})
-		.catch((err: MediaPermissionsError) => [handleMediaPermissionsError(err, appName, storedCamera)] as RequestResult)
+		.catch((err: MediaPermissionsError) => [handleMediaPermissionsError(err, appName, constraints)] as RequestResult)
 		
 	const devices = enumerateDevices ? await getDevices() : undefined
 	return {
@@ -99,8 +100,10 @@ export async function requestMediaPermission(
 	}
 }
 
-function handleMediaPermissionsError(err: MediaPermissionsError, appName: string, storedCamera: string | undefined) {
+function handleMediaPermissionsError(err: MediaPermissionsError, appName: string, constraints: MediaStreamConstraints) {
 	const { type, message, name } = err
+	const storedCamera = getStoredCameraId(appName);
+
 	if (type === MediaPermissionsErrorType.SystemPermissionDenied) {
 		// browser does not have permission to access camera or microphone
 		return 'denied:system'
@@ -126,7 +129,7 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 	} else if (name === "OverconstrainedError" && err.type?.toLowerCase() === "generic") {
 		// This seems to happen when the camera has just stopped, either by stopping the streams or refreshing the page.
 		// This may warrant a retry
-		if (TEMP_ERROR_ALERT) alert('error:inuse:retry+ ' + errorToString(err))
+		if (TEMP_ERROR_ALERT) alert('error:inuse:retry+ ' + errorToString(err,constraints))
 		return 'error:inuse:retry'
 	} else if (name === "OverconstrainedError" && ((err as OverconstrainedError).constraint === "deviceId" || message === "")
 		&& storedCamera) {
