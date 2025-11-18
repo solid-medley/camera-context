@@ -2,7 +2,6 @@ import { requestMediaPermission } from '../helpers/camera-helper'
 import type { CameraAccessConfig } from "./camera-access";
 import { TransferrableUserMediaState } from "../data-models/device";
 import { sandboxModule } from "./sandbox.module";
-import { forMilliseconds } from '../helpers/timeout';
 
 const { registerChildHandlers, forwardEvent, sendCallback } = await import("./sandbox.helpers");
 
@@ -30,15 +29,6 @@ export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ par
     let mediaStream: MediaStream | undefined = undefined;
     async function requestPermission() {
         const userMediaResult = await requestMediaPermission(constraints, true, appName)
-        if (userMediaResult.permission.toString() === 'error:inuse:retry') {
-            // TODO track retries max 3
-
-            await stop();
-            await forMilliseconds(500, abortSignal);
-            await requestPermission();
-            return;
-        }
-
         if (userMediaResult.camera?.stream) {
             const { stream, ...camera } = userMediaResult.camera!
 

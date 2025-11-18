@@ -2,6 +2,7 @@ import { Accessor, Component, createSignal, createUniqueId, onCleanup, onMount, 
 import { createSandbox, SandBox } from "./sandbox";
 import type { UserMediaState } from "../data-models/device";
 import type { CameraAccessWrapperProps } from './camera-access.wrapper';
+import { forMilliseconds } from "../helpers/timeout";
 
 const { send } = await import('./sandbox.helpers')
 const wrapperModule = (await import('./camera-access.wrapper')).default;
@@ -54,6 +55,16 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
 
         setSandbox(await createNameLater());
         const result = await send(sandbox()!.window, 'requestPermission', undefined as never)
+        
+        if (result.permission.toString() === 'error:inuse:retry') {
+            // TODO track retries max 3
+
+            await stop();
+            await forMilliseconds(500, abortController.signal);
+            await requestPermission();
+            return;
+        }
+
         if (!result.camera?.streamId) return setState(result as UserMediaState)
 
         if (result.camera.streamId !== stream()?.id) throw new Error('illegal state, incorrect stream id');
