@@ -51,9 +51,11 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
 
     async function requestPermission() {
         setState(s => ({ ...s!, permission: 'pending' }));
+
+        setSandbox(await createNameLater());
         const result = await send(sandbox()!.window, 'requestPermission', undefined as never)
         if (!result.camera?.streamId) return setState(result as UserMediaState)
-        
+
         if (result.camera.streamId !== stream()?.id) throw new Error('illegal state, incorrect stream id');
         return setState({ ...result, camera: { ...result.camera, stream: stream() } })
     }
@@ -62,9 +64,23 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         setStream(undefined);
         // First cleanly stop stream
         await send(sandbox()!.window, 'stop', undefined as never)
-        // Then recreate the sandbox
+        // Then close the sandbox
         await sandbox()!.close();
-        setSandbox(await createNameLater());
+
+        // See if retrying with no constraints helps
+        if (constraints.video) {
+            await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            }).catch((e) => alert('video ' + e.message))
+        }
+        if (constraints.audio) {
+            await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            }).catch((e) => alert('video ' + e.message))
+        }
+
         setState(s => ({ ...s!, permission: 'unknown' }));
         // // Then unmount the component
         // // setActiveState(false)
@@ -78,9 +94,10 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
 
     onMount(async () => {
 
+        // Try to create once
         const sandbox = await createNameLater()
+        await sandbox.close()
 
-        setSandbox(sandbox)
         setState({
             permission: 'unknown',
             camera: undefined,

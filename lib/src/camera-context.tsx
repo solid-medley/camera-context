@@ -24,9 +24,7 @@ type CameraContext = {
 const defaultConstraints: MediaStreamConstraints = {
   audio: true,
   video: {
-    facingMode: {
-      exact: 'environment'
-    }
+    facingMode: 'environment'
   }
 }
 
