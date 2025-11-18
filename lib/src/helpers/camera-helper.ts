@@ -76,10 +76,17 @@ type RequestResult = [permission: MediaPermission, camera?: Camera | undefined];
 export async function requestMediaPermission(
 	constraints: MediaStreamConstraints, enumerateDevices: boolean, appName: string
 ) : Promise<UserMediaState> {
+	
 
 	const storedCamera = getStoredCameraId(appName)
+	const combinedConstraints = combineConstraints(constraints, storedCamera)
+	
+	await navigator.mediaDevices.getUserMedia({
+		video: true,
+		audio: !!constraints.audio
+	}).catch((e) => alert('TEST ' + e.message))
 
-	const [permission, camera] = await requestMediaPermissions(combineConstraints(constraints, storedCamera))
+	const [permission, camera] = await requestMediaPermissions(combinedConstraints)
 		.then(async (success) => {
 			// @ts-expect-error // TODO figure out when this happens
 			if (!success) return ['denied-unknown'] as RequestResult
@@ -87,7 +94,7 @@ export async function requestMediaPermission(
 			// Just try this once to see if the stream starts, retry stored camera in case it changed
 			return [
 				'granted', 
-				await getCamera(combineConstraints(constraints, getStoredCameraId(appName)), appName)
+				await getCamera(combinedConstraints, appName)
 			] as RequestResult
 		})
 		.catch((err: MediaPermissionsError) => [handleMediaPermissionsError(err, appName, constraints)] as RequestResult)
