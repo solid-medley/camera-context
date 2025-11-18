@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsup-node --no-minify --watch",
     "build": "tsup-node",
-    "build:dev": "tsup-node --no-minify"
+    "build:dev": "NODE_ENV=development tsup-node --no-minify"
   },
   "keywords": [],
    "exports": {

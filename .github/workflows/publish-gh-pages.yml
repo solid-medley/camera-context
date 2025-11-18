@@ -48,7 +48,7 @@ jobs:
         env: 
           VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
           VITE_LISTNAME: ${{ vars.VITE_LISTNAME }}
-        run: pnpm -r run build
+        run: pnpm -r run build:dev # TODO TEMP DEV BUILD FOR DEBUGGING LIVE SITE
         working-directory: '.'
       - name: Setup Pages
         id: pages
