@@ -53,7 +53,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     let requestAttempt = 0;
     async function requestPermission() {
         // ANTI-LOOP
-        if (state()?.permission !== 'pending' && state()?.permission !== 'unknown') return state()
+        if (state()?.permission !== 'pending' && state()?.permission !== 'unknown') return state()!
         setState(s => ({ ...s!, permission: 'pending' }));
 
         const sandbox = setSandbox(await createNameLater());
@@ -66,7 +66,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
             await forMilliseconds(500, abortController.signal);
             await requestPermission();
 
-            return state();
+            return state()!;
         }
 
         if (!result.camera?.streamId) return setState(result as UserMediaState)
