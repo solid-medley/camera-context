@@ -55,24 +55,23 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     });
 
     let requestAttempt = 0;
-    async function requestPermission(recreateFrame = true) {
+    async function requestPermission(initial = true) {
         // ANTI-LOOP
         if (hasPermission(state, 'denied', 'denied:system', 'error:nosupport', 'granted')) return state()!;
 
-        if (recreateFrame) alert('initial \n' + new Error().stack)
+        if (initial) alert('initial \n' + new Error().stack)
         setState(s => ({ ...s!, permission: 'pending' }));
 
-        if(recreateFrame) setSandbox(await createNameLater())
+        if(!sandbox()) setSandbox(await createNameLater())
         const result = await send(sandbox()!.window, 'requestPermission', undefined as never)
 
-        if (result.permission.toString() === 'error:inuse:retry' && requestAttempt < 3) {
+        if (result.permission.toString() === 'error:inuse:retry') {
 
             if (requestAttempt > MAX_RETRIES) {
                 result.permission = 'error:inuse'
                 return setState(result  as UserMediaState);
             }
-            // TODO track retries max 3
-            alert('attempt: ' + requestAttempt++);
+
             await forMilliseconds(500, abortController.signal);
             await requestPermission(false);
 
@@ -123,7 +122,10 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         // abortController.signal.addEventListener('abort', () => clearTimeout(timeOutId), { once: true })
     }
 
-    onMount(() => {
+    onMount(async () => {
+
+        setSandbox(await createNameLater());
+
         setState({
             permission: 'unknown',
             camera: undefined,
