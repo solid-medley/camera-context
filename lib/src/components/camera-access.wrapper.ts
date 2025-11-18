@@ -6,19 +6,19 @@ import { forMilliseconds } from '../helpers/timeout';
 
 const { registerChildHandlers, forwardEvent, sendCallback } = await import("./sandbox.helpers");
 
-export type CameraAccessWrapperProps = 
-& {
-    [Key in keyof CameraAccessConfig]: CameraAccessConfig[Key]
-}
-& {
-    /** 
-     * Because a stream isn't StructureCloneable we just post it back to the parent window. 
-     * 
-     * The whole postmessage system is just so the IFrame owns the camera access, we can just pass the stream like this. \
-     * And so, we will.
-     */
-    postStream(stream: MediaStream | undefined): void 
-}
+export type CameraAccessWrapperProps =
+    & {
+        [Key in keyof CameraAccessConfig]: CameraAccessConfig[Key]
+    }
+    & {
+        /** 
+         * Because a stream isn't StructureCloneable we just post it back to the parent window. 
+         * 
+         * The whole postmessage system is just so the IFrame owns the camera access, we can just pass the stream like this. \
+         * And so, we will.
+         */
+        postStream(stream: MediaStream | undefined): void
+    }
 
 export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ parent, abortSignal, constraints, appName, postStream }) => {
 
@@ -32,7 +32,7 @@ export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ par
         const userMediaResult = await requestMediaPermission(constraints, true, appName)
         if (userMediaResult.permission.toString() === 'error:inuse:retry') {
             // TODO track retries max 3
-            
+
             await stop();
             await forMilliseconds(500, abortSignal);
             await requestPermission();
@@ -40,8 +40,8 @@ export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ par
         }
 
         if (userMediaResult.camera?.stream) {
-            const { stream, ...camera }  = userMediaResult.camera!
-            
+            const { stream, ...camera } = userMediaResult.camera!
+
             mediaStream = stream;
             postStream(stream)
             const transferrableCamera = {
@@ -61,11 +61,12 @@ export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ par
         if (!mediaStream) return await sendCallback(parent, 'stop', void 0)
 
         for (const track of mediaStream.getTracks()) {
-				if (track.readyState === 'ended') continue
-				track.stop()
-				track.enabled = false
+            if (track.readyState === 'ended') continue
+            track.stop()
+            track.enabled = false
+            mediaStream.removeTrack(track);
         }
-        
+
         // Backwards compatibility
         try {
             if ('stop' in mediaStream) (mediaStream as any).stop()

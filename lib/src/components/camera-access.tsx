@@ -59,6 +59,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     }
     async function stop() {
         setState(s => ({ ...s!, permission: 'pending' }));
+        setStream(undefined);
         // First cleanly stop stream
         await send(sandbox()!.window, 'stop', undefined as never)
         // Then recreate the sandbox
