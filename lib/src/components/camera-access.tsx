@@ -84,20 +84,6 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         // Then close the sandbox
         await sandbox()!.close();
 
-        // See if retrying with no constraints helps
-        // if (constraints.video) {
-        //     await navigator.mediaDevices.getUserMedia({
-        //         video: true,
-        //         audio: false
-        //     }).catch((e) => alert('video ' + e.message))
-        // }
-        // if (constraints.audio) {
-        //     await navigator.mediaDevices.getUserMedia({
-        //         video: true,
-        //         audio: false
-        //     }).catch((e) => alert('video ' + e.message))
-        // }
-
         setState(s => ({ ...s!, permission: 'unknown' }));
         // // Then unmount the component
         // // setActiveState(false)
