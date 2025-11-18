@@ -17,7 +17,7 @@ type CameraContext = {
   stop(): Promise<void>
   hasPermission(...permissionsToCheck: MediaPermission[]): boolean;
   canRequest: Accessor<boolean>
-  faulted:  Accessor<boolean>,
+  faulted: Accessor<boolean>,
   state: Accessor<UserMediaState>
 };
 
@@ -66,10 +66,6 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
     return permission
   }, [mediaState])
 
-   function hasPermission(...permissionsToCheck: MediaPermission[]) {
-    if (!mediaState()?.state()?.permission) return false
-    return permissionsToCheck.includes(mediaState()!.state()!.permission!);
-   }
 
   const faulted = createMemo(() => {
     const permission = mediaState()?.state().permission
@@ -99,15 +95,15 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
     return mediaState()!.stop();
   }
 
-  const state = createMemo(() => mediaState()?.state() ?? cameraContext.defaultValue.state(), 
+  const state = createMemo(() => mediaState()?.state() ?? cameraContext.defaultValue.state(),
     [mediaState, () => mediaState()?.state()])
 
   return (
     <cameraContext.Provider value={{
       requestPermission,
-      stop, 
-      hasPermission,
-      canRequest, 
+      stop,
+      hasPermission: (permissionsToCheck) => hasPermission(mediaState()?.state, permissionsToCheck),
+      canRequest,
       faulted,
       state
     }}>
@@ -119,3 +115,8 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
 }
 
 export function useCamera() { return useContext(cameraContext); }
+
+export function hasPermission(state: Accessor<UserMediaState | undefined> | undefined, ...permissionsToCheck: MediaPermission[]) {
+  if (!state?.()?.permission) return false
+  return permissionsToCheck.includes(state?.()!.permission!);
+}

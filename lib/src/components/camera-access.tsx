@@ -4,6 +4,7 @@ import type { UserMediaState } from "../data-models/device";
 import type { CameraAccessWrapperProps } from './camera-access.wrapper';
 import { forMilliseconds } from "../helpers/timeout";
 import { stopStream } from "../helpers/stream-helper";
+import { hasPermission } from "../camera-context";
 
 const { send } = await import('./sandbox.helpers')
 const wrapperModule = (await import('./camera-access.wrapper')).default;
@@ -54,7 +55,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     let requestAttempt = 0;
     async function requestPermission(initial = true) {
         // ANTI-LOOP
-        if (state()?.permission !== 'pending' && state()?.permission !== 'unknown') return state()!
+        if (hasPermission(state, 'denied', 'denied:system', 'error:nosupport', 'granted')) return state()!;
 
         if (initial) alert('initial \n' + new Error().stack)
         setState(s => ({ ...s!, permission: 'pending' }));
