@@ -18,7 +18,7 @@ if (typeof err == 'string') return err;
   msg = msg === undefined ? "" : `${msg}`;
 
   if ('type' in err) name+='|'+err.type
-  return `[${name}]: ${msg}`;
+  return `[${name}]: ${msg}`  + '\n' + JSON.stringify(err, undefined, 2);
 };
 
 function getLocalStorageName(appName: string, key: string) {
@@ -123,7 +123,7 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 	} else if (type === MediaPermissionsErrorType.Generic && message === "Permission dismissed") {
 		// prompt dismissed by user
 		return 'unknown'
-	} else if (name === "OverconstrainedError" && err.type?.toLowerCase() === "Generic" && storedCamera) {
+	} else if (name === "OverconstrainedError" && err.type?.toLowerCase() === "generic") {
 		// This seems to happen when the camera has just stopped, either by stopping the streams or refreshing the page.
 		// This may warrant a retry
 		if (TEMP_ERROR_ALERT) alert('error:inuse:retry+ ' + errorToString(err))
@@ -134,7 +134,6 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 		// This seems to happen when the browser stores a camera that doesn't exist (perhaps the ideas change on software update)
 		// Erase storage and reload
 		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + errorToString(err))
-		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + JSON.stringify(err, undefined, 2))
 			debugger;
 		storeCameraId(appName, undefined);
 		return 'error:inuse'
