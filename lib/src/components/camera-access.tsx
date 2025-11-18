@@ -56,7 +56,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         // ANTI-LOOP
         if (state()?.permission !== 'pending' && state()?.permission !== 'unknown') return state()!
 
-        alert('initial \n'+ console.trace())
+        if(initial) alert('initial \n'+ new Error().stack)
         setState(s => ({ ...s!, permission: 'pending' }));
 
         const sandbox = setSandbox(await createNameLater());
