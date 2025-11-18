@@ -123,8 +123,7 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 	} else if (type === MediaPermissionsErrorType.Generic && message === "Permission dismissed") {
 		// prompt dismissed by user
 		return 'unknown'
-	} else if (name === "OverconstrainedError" && ((err as OverconstrainedError).constraint.toLowerCase() === "Generic")
-		&& storedCamera) {
+	} else if (name === "OverconstrainedError" && err.type?.toLowerCase() === "Generic" && storedCamera) {
 		// This seems to happen when the camera has just stopped, either by stopping the streams or refreshing the page.
 		// This may warrant a retry
 		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + errorToString(err))
