@@ -9,6 +9,25 @@ import { getBrowserMetadata } from './browser-metadata'
 
 // TODO TEMP: THIS IS JUST TO CHECK THIS ON PHONES QUICKLY
 const TEMP_ERROR_ALERT = true;
+Error.prototype.toString = function () {
+  if (
+    this === null ||
+    (typeof this !== "object" && typeof this !== "function")
+  ) {
+    throw new TypeError();
+  }
+  let name = this.name;
+  name = name === undefined ? "Error" : `${name}`;
+  let msg = this.message;
+  msg = msg === undefined ? "" : `${msg}`;
+  if (name === "") {
+    return msg;
+  }
+  if (msg === "") {
+    return name;
+  }
+  return `${name}: ${msg}`;
+};
 
 function getLocalStorageName(appName: string, key: string) {
 	return `${key}@${appName}`
