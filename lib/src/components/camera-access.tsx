@@ -3,6 +3,7 @@ import { createSandbox, SandBox } from "./sandbox";
 import type { UserMediaState } from "../data-models/device";
 import type { CameraAccessWrapperProps } from './camera-access.wrapper';
 import { forMilliseconds } from "../helpers/timeout";
+import { stopStream } from "../helpers/stream-helper";
 
 const { send } = await import('./sandbox.helpers')
 const wrapperModule = (await import('./camera-access.wrapper')).default;
@@ -55,15 +56,14 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         // ANTI-LOOP
         if (state()?.permission !== 'pending' && state()?.permission !== 'unknown') return state()!
 
-        if(initial) alert('initial \n'+ new Error().stack)
+        if (initial) alert('initial \n' + new Error().stack)
         setState(s => ({ ...s!, permission: 'pending' }));
 
-        const sandbox = setSandbox(await createNameLater());
-        const result = await send(sandbox.window, 'requestPermission', undefined as never)
-        
-        if (result.permission.toString() === 'error:inuse:retry' && requestAttempt <3) {
+        const result = await send(sandbox()!.window, 'requestPermission', undefined as never)
+
+        if (result.permission.toString() === 'error:inuse:retry' && requestAttempt < 3) {
             // TODO track retries max 3
-            alert('attempt: '+ requestAttempt++);
+            alert('attempt: ' + requestAttempt++);
             await stop();
             debugger;
             await forMilliseconds(500, abortController.signal);
@@ -86,8 +86,9 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         await send(sandbox()!.window, 'stop', undefined as never)
         // Then close the sandbox
         await sandbox()!.close();
+        setSandbox(undefined)
 
-        
+
 
 
         // See if retrying with no constraints helps
@@ -104,6 +105,8 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
             }).catch((e) => alert('audio ' + e.message))
         }
 
+        setSandbox(await createNameLater());
+
         setState(s => ({ ...s!, permission: 'unknown' }));
         // // Then unmount the component
         // // setActiveState(false)
@@ -115,8 +118,8 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         // abortController.signal.addEventListener('abort', () => clearTimeout(timeOutId), { once: true })
     }
 
-    onMount(() => {
-
+    onMount(async () => {
+        setSandbox(await createNameLater());
         setState({
             permission: 'unknown',
             camera: undefined,
