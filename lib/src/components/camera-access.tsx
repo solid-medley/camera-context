@@ -3,7 +3,6 @@ import { createSandbox, SandBox } from "./sandbox";
 import type { UserMediaState } from "../data-models/device";
 import type { CameraAccessWrapperProps } from './camera-access.wrapper';
 import { forMilliseconds } from "../helpers/timeout";
-import { stopStream } from "../helpers/stream-helper";
 import { hasPermission } from "../camera-context";
 
 const { send } = await import('./sandbox.helpers')
