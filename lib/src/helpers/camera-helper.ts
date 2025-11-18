@@ -18,8 +18,8 @@ if (typeof err == 'string') return err;
   msg = msg === undefined ? "" : `${msg}`;
 
   if ('type' in err) name+='|'+err.type
-  const cc = constraints === undefined ? undefined : "\n========================================\n" + JSON.stringify(constraints)
-  return `[${name}]: ${msg}`  + '\n' + JSON.stringify(err, undefined, 2);
+  const cc = constraints === undefined ? "" : "\n========================================\n" + JSON.stringify(constraints)
+  return `[${name}]: ${msg}`  + '\n' + JSON.stringify(err, undefined, 2) + cc;
 };
 
 function getLocalStorageName(appName: string, key: string) {
@@ -164,7 +164,7 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 				storeCameraId(appName, requestedCamera)
 				throw error
 			}
-			const result = handleMediaPermissionsError(error as MediaPermissionsError, appName, storedCamera)
+			const result = handleMediaPermissionsError(error as MediaPermissionsError, appName, constraints)
 			if (result === 'error') throw error
 			return undefined
 		})
