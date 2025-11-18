@@ -113,11 +113,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         // abortController.signal.addEventListener('abort', () => clearTimeout(timeOutId), { once: true })
     }
 
-    onMount(async () => {
-
-        // Try to create once
-        const sandbox = await createNameLater()
-        await sandbox.close()
+    onMount(() => {
 
         setState({
             permission: 'unknown',
