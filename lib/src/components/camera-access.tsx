@@ -9,6 +9,8 @@ import { hasPermission } from "../camera-context";
 const { send } = await import('./sandbox.helpers')
 const wrapperModule = (await import('./camera-access.wrapper')).default;
 
+const MAX_RETRIES = 3;
+
 // function formatPermissions(constraints: MediaStreamConstraints): string | undefined {
 //     const allowAudio = constraints ? !!constraints.audio : true
 //     if (!allowAudio) return "camera 'src'"
@@ -53,21 +55,24 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     });
 
     let requestAttempt = 0;
-    async function requestPermission(initial = true) {
+    async function requestPermission(recreateFrame = true) {
         // ANTI-LOOP
         if (hasPermission(state, 'denied', 'denied:system', 'error:nosupport', 'granted')) return state()!;
 
-        if (initial) alert('initial \n' + new Error().stack)
+        if (recreateFrame) alert('initial \n' + new Error().stack)
         setState(s => ({ ...s!, permission: 'pending' }));
 
-        setSandbox(await createNameLater())
+        if(recreateFrame) setSandbox(await createNameLater())
         const result = await send(sandbox()!.window, 'requestPermission', undefined as never)
 
         if (result.permission.toString() === 'error:inuse:retry' && requestAttempt < 3) {
+
+            if (requestAttempt > MAX_RETRIES) {
+                result.permission = 'error:inuse'
+                return setState(result  as UserMediaState);
+            }
             // TODO track retries max 3
             alert('attempt: ' + requestAttempt++);
-            await stop();
-            debugger;
             await forMilliseconds(500, abortController.signal);
             await requestPermission(false);
 
