@@ -9,24 +9,16 @@ import { getBrowserMetadata } from './browser-metadata'
 
 // TODO TEMP: THIS IS JUST TO CHECK THIS ON PHONES QUICKLY
 const TEMP_ERROR_ALERT = true;
-Error.prototype.toString = function () {
-  if (
-    this === null ||
-    (typeof this !== "object" && typeof this !== "function")
-  ) {
-    throw new TypeError();
-  }
-  let name = this.name;
+function errorToString(err: Error | string | MediaPermissionsError) {
+if (typeof err == 'string') return err;
+
+  let name = err.name;
   name = name === undefined ? "Error" : `${name}`;
-  let msg = this.message;
+  let msg = err.message;
   msg = msg === undefined ? "" : `${msg}`;
-  if (name === "") {
-    return msg;
-  }
-  if (msg === "") {
-    return name;
-  }
-  return `${name}: ${msg}`;
+
+  if ('type' in err) name+='|'+err.type
+  return `[${name}]: ${msg}`;
 };
 
 function getLocalStorageName(appName: string, key: string) {
@@ -116,16 +108,16 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 		// user didn't allow app to access camera or microphone
 		return 'denied'
 	} else if (type === MediaPermissionsErrorType.CouldNotStartVideoSource) {
-		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + err.toString())
+		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + errorToString(err))
 		// camera is in use by another application (Zoom, Skype) or browser tab (Google Meet, Messenger Video)
 		// (mostly Windows specific problem)
 		return 'error:inuse'
 	} else if (name === 'AbortError' && message === "Starting videoinput failed") {
-		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + err.toString())
+		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + errorToString(err))
 		// Failed to start
 		return 'error:inuse'
 	} else if (name === 'NotReadableError') {
-		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + err.toString())
+		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + errorToString(err))
 		// Stream rejected reading data
 		return 'error:inuse'
 	} else if (type === MediaPermissionsErrorType.Generic && message === "Permission dismissed") {
@@ -135,11 +127,11 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 		&& storedCamera) {
 		// This seems to happen when the browser stores a camera that doesn't exist (perhaps the ideas change on software update)
 		// Erase storage and reload
-		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + err.toString())
+		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + errorToString(err))
 		storeCameraId(appName, undefined);
 		return 'error:inuse'
 	} else {
-		if (TEMP_ERROR_ALERT) alert('error+ ' + err.toString())
+		if (TEMP_ERROR_ALERT) alert('error+ ' + errorToString(err))
 		console.error(err)
 		// not all error types are handled by this library
 		return 'error'
