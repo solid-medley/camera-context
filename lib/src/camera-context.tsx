@@ -1,7 +1,8 @@
 import { createContext, ParentComponent, useContext, children, createSignal, createMemo, Accessor } from 'solid-js';
-import { MediaPermission, UserMediaState } from './data-models/device';
-import { CameraAccess, CameraAccessState } from './components/camera-access';
+import type { MediaPermission, UserMediaState } from './data-models/device';
+import { MediaAccessMarshal } from './components/media-access-marshal';
 import { faultyMediaPermissions, idleMediaPermissions } from './constants';
+import type { MediaAccessManager } from './components/media-access-manager';
 
 type VideoConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'echoCancellation'>
 type AudioConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'displaySurface' | 'facingMode'>
@@ -59,7 +60,7 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
 
   if (!checkBrowserSupport()) return <FaultyContext children={props.children} ctx={faultyContext()} />
 
-  const [mediaState, setState] = createSignal<CameraAccessState>();
+  const [mediaState, setState] = createSignal<MediaAccessManager>();
   const testIllustration = createMemo(() => {
 
     const permission = mediaState()?.state().permission
@@ -98,7 +99,7 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
       faulted,
       state
     }}>
-      <CameraAccess constraints={constraints} appName={props.appName} ref={setState} />
+      <MediaAccessMarshal constraints={constraints} appName={props.appName} ref={setState} />
       {testIllustration()}
       {children(() => props.children)()}
     </cameraContext.Provider>

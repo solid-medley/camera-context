@@ -1,7 +1,6 @@
 import { Accessor, Component, createSignal, createUniqueId, onCleanup, onMount, Setter, } from "solid-js";
 import { createSandbox, SandBox } from "./sandbox";
 import type { UserMediaState } from "../data-models/device";
-import type { CameraAccessWrapperProps } from './camera-access.wrapper';
 import { forMilliseconds } from "../helpers/timeout";
 import { hasPermission, matchesPermission } from "../camera-context";
 import { stopStream } from "../helpers/stream-helper";
@@ -9,36 +8,24 @@ import { createAbortSignal } from "../helpers/create-abort";
 import { features, retryAblePermissions } from "../constants";
 import { logModule } from "../helpers/debug-helper";
 
+// These imports HAVE to be type imports for the bundler
+import type { MediaAccessManager, MediaAccessManagerConfig, MediaAccessManagerProps } from './media-access-manager';
 // These imports are await imports on purpose for the bundler
 const { send } = await import('./sandbox.helpers')
-const wrapperModule = (await import('./camera-access.wrapper')).default;
+const wrapperModule = (await import('./media-access-manager')).default;
 
 logModule('camera-access', import.meta)
 
 const RETRY_ENABLED = features.RETRY_MAX > 0;
 
-function formatPermissions(constraints: MediaStreamConstraints): string | undefined {
-    const allowAudio = constraints ? !!constraints.audio : true
-    if (!allowAudio) return "camera 'src'"
-    return "camera 'src'; microphone 'src'"
+
+export type MediaAccessMarshalProps = MediaAccessManagerConfig & {
+    ref: Setter<MediaAccessManager | undefined>
 }
 
-export type CameraAccessState = {
-    state: Accessor<UserMediaState>
-    requestPermission(): Promise<UserMediaState>
-    stop(): Promise<void>
-}
-export type CameraAccessConfig = {
-    constraints: MediaStreamConstraints
-    appName: string
-}
-export type CameraAccessProps = CameraAccessConfig & {
-    ref: Setter<CameraAccessState | undefined>
-}
+export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ constraints, appName, ref: setRef }) => {
 
-export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appName, ref: setRef }) => {
-
-    const [abortSignal, abortController] = createAbortSignal();
+    const [abortSignal] = createAbortSignal();
 
     const [state, setState] = createSignal<UserMediaState>();
     const [stream, setStream] = createSignal<MediaStream>();
@@ -46,11 +33,13 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     const [sandbox, setSandbox] = createSignal<SandBox>()
     const uid = createUniqueId()
 
-    const createNameLater = () => createSandbox<CameraAccessWrapperProps>(wrapperModule.url, {
+    const createMediaAccessManager = () => createSandbox<MediaAccessManagerProps>(wrapperModule.url, {
         uid,
         abortSignal,
-        allow: formatPermissions(constraints),
-        sandbox: "allow-same-origin allow-scripts" + (features.DEBUG_ERROR_ALERT ? " allow-forms allow-modals" : ""),
+        allow: formatSandboxPermissions(constraints),
+        sandbox: "allow-same-origin allow-scripts" + (features.DEBUG_ERROR_ALERT 
+            ? " allow-forms allow-modals" 
+            : ""),
         props: {
             appName,
             constraints,
@@ -65,10 +54,9 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         if (hasPermission(state, 'denied', 'denied:system', 'error:no-support', 'granted')) return state()!;
         if (requestAttempt > features.RETRY_MAX) return state()!;
 
-        // if (initial) alert('initial \n' + new Error().stack)
         setState(s => ({ ...s!, permission: 'pending' }));
 
-        if (!sandbox()) setSandbox(await createNameLater())
+        if (!sandbox()) setSandbox(await createMediaAccessManager())
         else if (!!stream()) await stopCameraStream(false);
 
         const result = await send(sandbox()!.window, 'requestPermission', undefined as never)
@@ -92,15 +80,12 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
         requestAttempt = 0;
 
         if (!result.camera?.streamId) return setState(result as UserMediaState)
-
         if (result.camera.streamId !== stream()?.id) throw new Error('illegal state, incorrect stream id');
         return setState({ ...result, camera: { ...result.camera, stream: stream() } })
     }
     async function stop() {
         setState(s => ({ ...s!, permission: 'pending' }));
-        
         await stopCameraStream(true)
-
         setState(s => ({ ...s!, permission: 'unknown' }));
     }
 
@@ -125,7 +110,7 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
 
     onMount(async () => {
 
-        setSandbox(await createNameLater());
+        setSandbox(await createMediaAccessManager());
 
         setState({
             permission: 'unknown',
@@ -140,33 +125,14 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     })
 
     onCleanup(async () => {
-        if (abortController.signal.aborted) return;
         await stop()
     })
 
-    // onMount(() => registerParentHandlers(uid, abortController.signal, async (event) => {
-
-    //     const initializing = !state();
-
-    //     // Do nothing until initialized
-    //     if (initializing) await forwardEvent(event, 'initialized', initialized);
-    //     if (initializing) return;
-
-    // }))
-
-    // return <Portal ref={(element) => {
-    //     element.id = 'camera-access';
-    //     element.style.display = 'none';
-    // }} useShadow>
-    //     {active() && <Sandbox<CameraAccessWrapperProps>
-    //         ref={(el) => setTargetWindow(el!.contentWindow!)}
-    //         allow={formatPermissions(constraints)}
-    //         sandbox="allow-same-origin allow-scripts allow-forms"
-    //         module={wrapperModule.url}
-    //         moduleProps={{ constraints, appName, postStream: setStream }}
-    //         uid={uid}
-    //     />}
-    // </Portal>
-
     return undefined
+}
+
+function formatSandboxPermissions(constraints: MediaStreamConstraints): string | undefined {
+    const allowAudio = constraints ? !!constraints.audio : true
+    if (!allowAudio) return "camera 'src'"
+    return "camera 'src'; microphone 'src'"
 }

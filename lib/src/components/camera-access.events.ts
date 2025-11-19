@@ -1,5 +1,5 @@
 import type { TransferrableUserMediaState } from "../data-models/device"
-
+import { eventType, returnNothing, returnType, returnVoid } from "./sandbox.events"
 
 const events = {
     initialized: { name: 'initialized',  type: eventType(), returns: returnNothing() },
@@ -7,28 +7,7 @@ const events = {
     stop: { name: 'stop',  type: eventType(), returns: returnVoid() },
 } as const
 
-
-
-
-
-
-
-
-
 // ------------------------------------------------------------------------
-
-function eventType<TData extends unknown = never>() {
-    return undefined as unknown as TData
-}
-function returnType<TData extends object>() {
-    return true as unknown as TData
-}
-function returnVoid() {
-    return true as unknown as void
-}
-function returnNothing() {
-    return undefined as void
-}
 
 export type EventName = keyof typeof events
 

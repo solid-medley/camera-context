@@ -1,14 +1,25 @@
 import { requestMediaPermission } from '../helpers/camera-helper'
-import type { CameraAccessConfig } from "./camera-access";
-import type { TransferrableUserMediaState } from "../data-models/device";
+import type { TransferrableUserMediaState, UserMediaState } from "../data-models/device";
 import { sandboxModule } from "./sandbox.module";
+import { Accessor } from 'solid-js';
 
+// These imports need to be await import for the bundler
 const { registerChildHandlers, forwardEvent, sendCallback } = await import("./sandbox.helpers");
 const { stopStream } = await import("../helpers/stream-helper");
 
-export type CameraAccessWrapperProps =
+export type MediaAccessManager = {
+    state: Accessor<UserMediaState>
+    requestPermission(): Promise<UserMediaState>
+    stop(): Promise<void>
+}
+export type MediaAccessManagerConfig = {
+    constraints: MediaStreamConstraints
+    appName: string
+}
+
+export type MediaAccessManagerProps =
     & {
-        [Key in keyof CameraAccessConfig]: CameraAccessConfig[Key]
+        [Key in keyof MediaAccessManagerConfig]: MediaAccessManagerConfig[Key]
     }
     & {
         /** 
@@ -20,7 +31,10 @@ export type CameraAccessWrapperProps =
         postStream(stream: MediaStream | undefined): void
     }
 
-export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ parent, abortSignal, constraints, appName, postStream }) => {
+export default sandboxModule<MediaAccessManagerProps>(import.meta, async ({ 
+    parent, abortSignal, appName, 
+    constraints, postStream 
+}) => {
 
     registerChildHandlers(parent, abortSignal, async (event) => {
         await forwardEvent(event, 'requestPermission', requestPermission)
