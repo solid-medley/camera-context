@@ -17,7 +17,7 @@ export type SandboxProps<TProps extends Record<string, unknown>> =
 
 export type SandBox = {
     window: WindowProxy,
-    close(): Promise<void>
+    close(eraseStream: boolean): Promise<void>
 }
 export async function createSandbox<TModuleProps extends Record<string, unknown>>(
     moduleUrl:string, sandboxProps: SandboxProps<TModuleProps>
@@ -60,31 +60,25 @@ export async function createSandbox<TModuleProps extends Record<string, unknown>
                     resolve({
                         window: contentWindow,
                         close: () => new Promise<void>(res => {
-                            abortController.abort('retry');
+                            if (!abortController.signal.aborted) abortController.abort('retry');
                             iframe.addEventListener('load', async () => {
                                 iframe.removeAttribute('srcdoc');
                                 iframe.src = 'about:blank?'+ Date.now()
                                 iframe.contentWindow?.location.assign(iframe.src)
 
-                                await forMilliseconds(10, parentAbortSignal)
+                                await forMilliseconds(100, parentAbortSignal)
                                 iframe?.contentWindow?.close();
                                 iframe?.remove();
                                 iframe = undefined! as HTMLIFrameElement;
 
-                                await forMilliseconds(10, parentAbortSignal)
+                                await forMilliseconds(100, parentAbortSignal)
                                 res()
                             }, { once: true, signal: parentAbortSignal })
                             iframe.contentWindow!.location.reload()
                         })
                     })
                 }
-            })
-
-            // const sandboxedModule = Object.assign(frameRef()!.contentDocument?.createElement('script')!, {
-            //     type: 'module',
-            //     src: moduleUrl
-            // })
-            // bodyRef()!.append(sandboxedModule);
+            });
             
             const sandboxInit = Object.assign(contentDocument.createElement('script')!, {
                 type: 'module',

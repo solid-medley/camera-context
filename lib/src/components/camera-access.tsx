@@ -1,20 +1,27 @@
-import { Accessor, Component, createSignal, createUniqueId, onCleanup, onMount, Setter } from "solid-js";
+import { Accessor, Component, createSignal, createUniqueId, onCleanup, onMount, Setter, } from "solid-js";
 import { createSandbox, SandBox } from "./sandbox";
 import type { UserMediaState } from "../data-models/device";
 import type { CameraAccessWrapperProps } from './camera-access.wrapper';
 import { forMilliseconds } from "../helpers/timeout";
-import { hasPermission } from "../camera-context";
+import { hasPermission, matchesPermission } from "../camera-context";
+import { stopStream } from "../helpers/stream-helper";
+import { createAbortSignal } from "../helpers/create-abort";
+import { features, retryAblePermissions } from "../constants";
+import { logModule } from "../helpers/debug-helper";
 
+// These imports are await imports on purpose for the bundler
 const { send } = await import('./sandbox.helpers')
 const wrapperModule = (await import('./camera-access.wrapper')).default;
 
-const MAX_RETRIES = 3;
+logModule('camera-access', import.meta)
 
-// function formatPermissions(constraints: MediaStreamConstraints): string | undefined {
-//     const allowAudio = constraints ? !!constraints.audio : true
-//     if (!allowAudio) return "camera 'src'"
-//     return "camera 'src'; microphone 'src'"
-// }
+const RETRY_ENABLED = features.RETRY_MAX > 0;
+
+function formatPermissions(constraints: MediaStreamConstraints): string | undefined {
+    const allowAudio = constraints ? !!constraints.audio : true
+    if (!allowAudio) return "camera 'src'"
+    return "camera 'src'; microphone 'src'"
+}
 
 export type CameraAccessState = {
     state: Accessor<UserMediaState>
@@ -31,10 +38,8 @@ export type CameraAccessProps = CameraAccessConfig & {
 
 export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appName, ref: setRef }) => {
 
-    const abortController = new AbortController();
-    onCleanup(() => abortController.abort('unmount'));
+    const [abortSignal, abortController] = createAbortSignal();
 
-    // const [active, setActiveState] = createSignal<boolean>(true);
     const [state, setState] = createSignal<UserMediaState>();
     const [stream, setStream] = createSignal<MediaStream>();
 
@@ -43,9 +48,9 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
 
     const createNameLater = () => createSandbox<CameraAccessWrapperProps>(wrapperModule.url, {
         uid,
-        abortSignal: abortController.signal,
-        // allow: formatPermissions(constraints),
-        // sandbox: "allow-same-origin allow-scripts allow-forms",
+        abortSignal,
+        allow: formatPermissions(constraints),
+        sandbox: "allow-same-origin allow-scripts" + (features.DEBUG_ERROR_ALERT ? " allow-forms allow-modals" : ""),
         props: {
             appName,
             constraints,
@@ -57,24 +62,28 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     async function requestPermission(initial = true) {
         if (initial) requestAttempt = 0;
         // ANTI-LOOP
-        if (hasPermission(state, 'denied', 'denied:system', 'error:nosupport', 'granted')) return state()!;
-        if (requestAttempt >= MAX_RETRIES) return state()!;
+        if (hasPermission(state, 'denied', 'denied:system', 'error:no-support', 'granted')) return state()!;
+        if (requestAttempt > features.RETRY_MAX) return state()!;
 
-        if (initial) alert('initial \n' + new Error().stack)
+        // if (initial) alert('initial \n' + new Error().stack)
         setState(s => ({ ...s!, permission: 'pending' }));
 
-        if(!sandbox()) setSandbox(await createNameLater())
+        if (!sandbox()) setSandbox(await createNameLater())
+        else if (!!stream()) await stopCameraStream(false);
+
         const result = await send(sandbox()!.window, 'requestPermission', undefined as never)
 
-        if (result.permission.toString() === 'error:inuse:retry') {
+        if (RETRY_ENABLED && matchesPermission(result.permission, ...retryAblePermissions)) {
+        
+            await stopCameraStream(true);
 
-            requestAttempt ++;
-            if (requestAttempt >= MAX_RETRIES) {
+            requestAttempt++;
+            if (requestAttempt > features.RETRY_MAX) {
                 result.permission = 'error:inuse'
-                return setState(result  as UserMediaState);
+                return setState(result as UserMediaState);
             }
 
-            await forMilliseconds(500, abortController.signal);
+            await forMilliseconds(1500, abortSignal);
             await requestPermission(false);
 
             return state()!;
@@ -89,36 +98,29 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     }
     async function stop() {
         setState(s => ({ ...s!, permission: 'pending' }));
-        setStream(undefined);
-        // First cleanly stop stream
-        await send(sandbox()!.window, 'stop', undefined as never)
-        // Then close the sandbox
-        await sandbox()!.close();
-        setSandbox(undefined)
-
-        // // See if retrying with no constraints helps
-        // if (constraints.video) {
-        //     await navigator.mediaDevices.getUserMedia({
-        //         video: true,
-        //         audio: false
-        //     }).then(stopStream).catch((e) => alert('video ' + e.message))
-        // }
-        // if (constraints.audio) {
-        //     await navigator.mediaDevices.getUserMedia({
-        //         video: true,
-        //         audio: false
-        //     }).then(stopStream).catch((e) => alert('audio ' + e.message))
-        // }
+        
+        await stopCameraStream(true)
 
         setState(s => ({ ...s!, permission: 'unknown' }));
-        // // Then unmount the component
-        // // setActiveState(false)
-        // // Disabling the camera seems to take a while.
-        // const timeOutId = setTimeout(() => {
-        //     // setActiveState(true);
-        //     setState(s => ({ ...s!, permission: 'unknown' }));
-        // }, 600)
-        // abortController.signal.addEventListener('abort', () => clearTimeout(timeOutId), { once: true })
+    }
+
+    async function stopCameraStream(deleteStream: boolean) {
+        
+        // Stop stream here
+        await stopStream(stream());
+        setStream(undefined);
+
+        // Stop stream in owner window
+        if (!deleteStream) {
+            await send(sandbox()!.window, 'stop', undefined as never)
+            setState(s => ({ ...s!, permission: 'unknown' }));
+            return
+        }
+
+        // Kill stream in owner window
+        await send(sandbox()!.window, 'stop', undefined as never)
+        await sandbox()!.close(deleteStream);
+        setSandbox(undefined)
     }
 
     onMount(async () => {
@@ -138,8 +140,8 @@ export const CameraAccess: Component<CameraAccessProps> = ({ constraints, appNam
     })
 
     onCleanup(async () => {
-        alert('cleanup')
-        await stop();
+        if (abortController.signal.aborted) return;
+        await stop()
     })
 
     // onMount(() => registerParentHandlers(uid, abortController.signal, async (event) => {

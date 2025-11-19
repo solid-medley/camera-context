@@ -1,6 +1,6 @@
 import { requestMediaPermission } from '../helpers/camera-helper'
 import type { CameraAccessConfig } from "./camera-access";
-import { TransferrableUserMediaState } from "../data-models/device";
+import type { TransferrableUserMediaState } from "../data-models/device";
 import { sandboxModule } from "./sandbox.module";
 
 const { registerChildHandlers, forwardEvent, sendCallback } = await import("./sandbox.helpers");
@@ -29,6 +29,11 @@ export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ par
 
     let mediaStream: MediaStream | undefined = undefined;
     async function requestPermission() {
+        if (!!mediaStream) {
+            debugger;
+            await endStream();
+        }
+
         const userMediaResult = await requestMediaPermission(constraints, true, appName)
         if (userMediaResult.camera?.stream) {
             const { stream, ...camera } = userMediaResult.camera!
@@ -49,11 +54,16 @@ export default sandboxModule<CameraAccessWrapperProps>(import.meta, async ({ par
     }
 
     async function stop() {
-        if (!mediaStream) return await sendCallback(parent, 'stop', void 0)
 
-        stopStream(mediaStream)
-        mediaStream = undefined;
-
+        await endStream();
         await sendCallback(parent, 'stop', void 0);
+    }
+
+    async function endStream() {
+
+        if (!mediaStream) return;
+        postStream(undefined);
+        await stopStream(mediaStream)
+        mediaStream = undefined;
     }
 });

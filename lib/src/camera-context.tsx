@@ -1,6 +1,7 @@
 import { createContext, ParentComponent, useContext, children, createSignal, createMemo, Accessor } from 'solid-js';
 import { MediaPermission, UserMediaState } from './data-models/device';
 import { CameraAccess, CameraAccessState } from './components/camera-access';
+import { faultyMediaPermissions, idleMediaPermissions } from './constants';
 
 type VideoConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'echoCancellation'>
 type AudioConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'displaySurface' | 'facingMode'>
@@ -66,24 +67,14 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
     return permission
   }, [mediaState])
 
-
   const faulted = createMemo(() => {
-    const permission = mediaState()?.state().permission
-    if (!permission) return false;
-    if (permission.startsWith('denied')) return true;
-    // Error inuse is not considered a faulty state, a user can try again 
-    if (permission === 'error:nosupport') return true;
-    if (permission === 'error') return true;
-    return false;
+    const state = mediaState()?.state()
+    return hasPermission(state, ...faultyMediaPermissions);
   }, [mediaState])
 
   const canRequest = createMemo(() => {
-    const permission = mediaState()?.state().permission
-    if (!permission) return false;
-    if (permission === 'pending') return false;
-    if (permission === 'granted') return false;
-    if (faulted()) return false;
-    return true;
+    const state = mediaState()?.state()
+    return hasPermission(state, idleMediaPermissions);
   }, [mediaState, faulted])
 
   function requestPermission() {
@@ -116,7 +107,16 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
 
 export function useCamera() { return useContext(cameraContext); }
 
-export function hasPermission(state: Accessor<UserMediaState | undefined> | undefined, ...permissionsToCheck: MediaPermission[]) {
-  if (!state?.()?.permission) return false
-  return permissionsToCheck.includes(state?.()!.permission!);
+export function hasPermission(state: Accessor<UserMediaState | undefined> | undefined | UserMediaState, ...permissionsToCheck: MediaPermission[]) {
+  if (!state) return false;
+  const stateValue = typeof state === 'function' ? state() : state
+  
+  return matchesPermission(stateValue?.permission, ...permissionsToCheck)
+}
+export function matchesPermission(permission: Accessor<MediaPermission | undefined> | undefined | MediaPermission, ...permissionsToCheck: MediaPermission[]) {
+  if (!permission) return false;
+  const permissionValue = typeof permission === 'function' ? permission() : permission
+  
+  if (!permissionValue) return false
+  return permissionsToCheck.includes(permissionValue);
 }

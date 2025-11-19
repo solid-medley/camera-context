@@ -14,7 +14,6 @@ export type UserMediaState = {
  * We revert this before exposing it to any library consumers.
  */
 export type TransferrableUserMediaState = Omit<UserMediaState, 'camera'> & {
-	permission: MediaPermission
     camera: TransferrableCamera | undefined
     devices: DeviceResult
 }
@@ -41,5 +40,5 @@ export type DeviceResult =
 	| { videoDevices: FlatMediaDeviceInfo[] }
 
 export type MediaPermission =
-	'granted' | 'denied' | 'denied:system' | 'error' | 'error:inuse' | 'error:nosupport' |
+	'granted' | 'denied' | 'denied:system' | 'error:unexpected' | 'error:inuse' | 'error:no-support' |
 	'pending' | 'unknown'

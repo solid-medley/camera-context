@@ -16,11 +16,12 @@
   "packageManager": "pnpm@10.22.0",
   "dependencies": {
     "@quick-vite/gh-pages-spa": "^7.0.2",
+    "@solid-medley/camera-context": "workspace:^",
     "@solidjs/router": "^0.15.4",
-    "solid-js": "^1.9.10",
-    "@solid-medley/camera-context": "workspace:^"
+    "solid-js": "^1.9.10"
   },
   "devDependencies": {
+    "@vitejs/plugin-basic-ssl": "^2.1.0",
     "vite": "^7.2.2",
     "vite-plugin-solid": "^2.11.10"
   }

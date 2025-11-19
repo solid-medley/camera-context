@@ -1,9 +1,17 @@
 
-export function stopStream(stream: MediaStream | null | undefined) {
+export async function stopStream(stream: MediaStream | null | undefined) {
     if (!stream) return;
 
+    // TODO figure something out
+    // const streamEnded = new Promise<void>(res => {
+    //     stream.addEventListener('removetrack', () => res(), {once: true, capture: true})
+    // })
+
     for (const track of stream.getTracks()) {
-        if (track.readyState === 'ended') continue
+        if (track.readyState === 'ended') {
+            stream.removeTrack(track);
+            continue
+        }
         track.stop()
         track.enabled = false
         stream.removeTrack(track);
@@ -15,4 +23,6 @@ export function stopStream(stream: MediaStream | null | undefined) {
     } catch {
         //
     }
+
+    // streamEnded.then(() => console.log('e'))
 }

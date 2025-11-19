@@ -6,21 +6,10 @@ import {
 } from 'mic-check'
 import { Camera, DeviceResult, FlatMediaDeviceInfo, MediaPermission, UserMediaState } from '../data-models/device'
 import { getBrowserMetadata } from './browser-metadata'
+import { errorToString, logModule } from './debug-helper';
+import { features } from '../constants';
 
-// TODO TEMP: THIS IS JUST TO CHECK THIS ON PHONES QUICKLY
-const TEMP_ERROR_ALERT = true;
-function errorToString(err: Error | string | MediaPermissionsError, constraints?: MediaStreamConstraints) {
-if (typeof err == 'string') return err;
-
-  let name = err.name;
-  name = name === undefined ? "Error" : `${name}`;
-  let msg = err.message;
-  msg = msg === undefined ? "" : `${msg}`;
-
-  if ('type' in err) name+='|'+err.type
-  const cc = constraints === undefined ? "" : "\n========================================\n" + JSON.stringify(constraints)
-  return `[${name}]: ${msg}`  + '\n' + JSON.stringify(err, undefined, 2) + cc;
-};
+logModule('camera-helper', import.meta)
 
 function getLocalStorageName(appName: string, key: string) {
 	return `${key}@${appName}`
@@ -80,11 +69,6 @@ export async function requestMediaPermission(
 
 	const storedCamera = getStoredCameraId(appName)
 	const combinedConstraints = combineConstraints(constraints, storedCamera)
-	
-	await navigator.mediaDevices.getUserMedia({
-		video: true,
-		audio: !!constraints.audio
-	}).catch((e) => alert('TEST ' + e.message))
 
 	const [permission, camera] = await requestMediaPermissions(combinedConstraints)
 		.then(async (success) => {
@@ -97,7 +81,7 @@ export async function requestMediaPermission(
 				await getCamera(combinedConstraints, appName)
 			] as RequestResult
 		})
-		.catch((err: MediaPermissionsError) => [handleMediaPermissionsError(err, appName, constraints)] as RequestResult)
+		.catch((err: MediaPermissionsError) => [handleMediaPermissionsError(err, appName)] as RequestResult)
 		
 	const devices = enumerateDevices ? await getDevices() : undefined
 	return {
@@ -107,7 +91,12 @@ export async function requestMediaPermission(
 	}
 }
 
-function handleMediaPermissionsError(err: MediaPermissionsError, appName: string, constraints: MediaStreamConstraints) {
+/** 
+ * NOTE! \
+ * If there are still `debugger;` statements in this function, that means we haven't encountered them yet \
+ * If no more `debugger;` statements are left, this comment may be deleted.
+ */
+function handleMediaPermissionsError(err: MediaPermissionsError, appName: string): MediaPermission {
 	const { type, message, name } = err
 	const storedCamera = getStoredCameraId(appName);
 
@@ -118,38 +107,35 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 		// user didn't allow app to access camera or microphone
 		return 'denied'
 	} else if (type === MediaPermissionsErrorType.CouldNotStartVideoSource) {
-		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + errorToString(err))
+		if (features.DEBUG_ERROR_ALERT) alert('error:inuse \n' + errorToString(err))
 		// camera is in use by another application (Zoom, Skype) or browser tab (Google Meet, Messenger Video)
 		// (mostly Windows specific problem)
+		debugger;
 		return 'error:inuse'
 	} else if (name === 'AbortError' && message === "Starting videoinput failed") {
-		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + errorToString(err))
+		if (features.DEBUG_ERROR_ALERT) alert('error:inuse \n' + errorToString(err))
 		// Failed to start
 		return 'error:inuse'
 	} else if (name === 'NotReadableError') {
-		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + errorToString(err))
+		if (features.DEBUG_ERROR_ALERT) alert('error:inuse \n' + errorToString(err))
 		// Stream rejected reading data
 		return 'error:inuse'
 	} else if (type === MediaPermissionsErrorType.Generic && message === "Permission dismissed") {
 		// prompt dismissed by user
 		return 'unknown'
-	} else if (name === "OverconstrainedError" && err.type?.toLowerCase() === "generic") {
-		// This seems to happen when the camera has just stopped, either by stopping the streams or refreshing the page.
-		// This may warrant a retry
-		if (TEMP_ERROR_ALERT) alert('error:inuse:retry+ ' + errorToString(err,constraints))
-		return 'error:inuse:retry'
 	} else if (name === "OverconstrainedError" && ((err as OverconstrainedError).constraint === "deviceId" || message === "")
 		&& storedCamera) {
+		if (features.DEBUG_ERROR_ALERT) alert('error:inuse \n' + errorToString(err))
 		// This seems to happen when the browser stores a camera that doesn't exist (perhaps the ideas change on software update)
 		// Erase storage and reload
-		if (TEMP_ERROR_ALERT) alert('error:inuse+ ' + errorToString(err))
 		storeCameraId(appName, undefined);
 		return 'error:inuse'
 	} else {
-		if (TEMP_ERROR_ALERT) alert('error+ ' + errorToString(err))
+		if (features.DEBUG_ERROR_ALERT) alert('error:unexpected \n' + errorToString(err))
 		console.error(err)
 		// not all error types are handled by this library
-		return 'error'
+		debugger;
+		return 'error:unexpected'
 	}
 }
 
@@ -163,15 +149,15 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 	const mediaStream = await navigator.mediaDevices.getUserMedia(deviceConstraints)
 		.catch(error => {
 			if (error.name === 'NotReadableError') {
+				if (features.DEBUG_ERROR_ALERT) alert('NOTREADABLE \n' + errorToString(error))
 				// Sometimes the browser doesn't close the stream on mobile devices
 				// To solve this we store and redirect.
 				// TODO: see how this works in iframe
 				debugger;
-				if (TEMP_ERROR_ALERT) alert('NOTREADABLE+ ' + errorToString(error))
 				storeCameraId(appName, requestedCamera)
 				throw error
 			}
-			const result = handleMediaPermissionsError(error as MediaPermissionsError, appName, constraints)
+			const [result] = handleMediaPermissionsError(error as MediaPermissionsError, appName)
 			if (result === 'error') throw error
 			return undefined
 		})
