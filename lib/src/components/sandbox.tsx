@@ -94,6 +94,13 @@ export async function createSandbox<TModuleProps extends Record<string, unknown>
             contentDocument.body.append(sandboxInit);
         }, { once: true, signal: abortController.signal })
 
-        window.document.body.append(iframe)
+        if (!('attachShadow' in document.body)) 
+            return window.document.body.append(iframe)
+
+        const shadowWrapper = document.createElement('div')
+        shadowWrapper.style = "display: none;"
+        const shadow = shadowWrapper.attachShadow({ mode: "closed" });
+        shadow.appendChild(iframe);
+        window.document.body.append(shadowWrapper)
     })
 }
