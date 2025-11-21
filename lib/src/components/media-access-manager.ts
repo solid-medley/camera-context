@@ -8,7 +8,7 @@ const { registerChildHandlers, forwardEvent, sendCallback } = await import("./sa
 const { logModule }  = await import('../helpers/debug-helper');
 const { stopStream } = await import("../helpers/stream-helper");
 
-logModule('media-access-manager')
+logModule('media-access-manager', import.meta)
 
 export type MediaAccessManager = {
     state: Accessor<UserMediaState>

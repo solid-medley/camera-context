@@ -9,7 +9,7 @@ import { getBrowserMetadata } from './browser-metadata'
 import { errorToString, logModule } from './debug-helper';
 import { features } from '../constants';
 
-logModule('camera-helper')
+logModule('camera-helper', import.meta)
 
 function getLocalStorageName(appName: string, key: string) {
 	return `${key}@${appName}`

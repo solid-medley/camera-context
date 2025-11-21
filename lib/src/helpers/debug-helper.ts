@@ -32,9 +32,10 @@ export async function downloadBlob(frame: Blob | undefined) {
 }
 
 /** Module to help identifying modules in chunks */
-export function logModule(moduleName: string) {
+export function logModule(moduleName: string, importMeta: ImportMeta) {
     if (!features.DEBUG_LOG_MODULE_ENABLED) return;
-    console.debug(moduleName)
+    console.debug(moduleName, importMeta.url.split('/').at(-1))
+    console.debug(importMeta.url)
 }
 
 /** Stupid helper for debugging purposes */

@@ -5,7 +5,7 @@ import { faultyMediaPermissions, idleMediaPermissions } from './constants';
 import { MediaAccessManager } from './components/media-access-manager';
 import { logModule } from './helpers/debug-helper';
 
-logModule('camera-context')
+logModule('camera-context', import.meta)
 
 type VideoConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'echoCancellation'>
 type AudioConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'displaySurface' | 'facingMode'>
