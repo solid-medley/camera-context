@@ -3,8 +3,6 @@ export type UserMediaState = {
 	permission: MediaPermission
     camera: Camera | undefined
     devices: DeviceResult
-
-	port?: MessagePort
 }
 
 /**

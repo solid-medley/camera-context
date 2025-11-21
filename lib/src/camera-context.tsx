@@ -2,7 +2,10 @@ import { createContext, ParentComponent, useContext, children, createSignal, cre
 import type { MediaPermission, UserMediaState } from './data-models/device';
 import { MediaAccessMarshal } from './components/media-access-marshal';
 import { faultyMediaPermissions, idleMediaPermissions } from './constants';
-import type { MediaAccessManager } from './components/media-access-manager';
+import { MediaAccessManager } from './components/media-access-manager';
+import { logModule } from './helpers/debug-helper';
+
+logModule('camera-context')
 
 type VideoConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'echoCancellation'>
 type AudioConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'displaySurface' | 'facingMode'>

@@ -5,7 +5,10 @@ import { Accessor } from 'solid-js';
 
 // These imports need to be await import for the bundler
 const { registerChildHandlers, forwardEvent, sendCallback } = await import("./sandbox.helpers");
+const { logModule }  = await import('../helpers/debug-helper');
 const { stopStream } = await import("../helpers/stream-helper");
+
+logModule('media-access-manager')
 
 export type MediaAccessManager = {
     state: Accessor<UserMediaState>

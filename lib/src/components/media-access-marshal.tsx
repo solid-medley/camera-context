@@ -14,7 +14,7 @@ import type { MediaAccessManager, MediaAccessManagerConfig, MediaAccessManagerPr
 const { send } = await import('./sandbox.helpers')
 const wrapperModule = (await import('./media-access-manager')).default;
 
-logModule('camera-access', import.meta)
+logModule('media-access-marshal')
 
 const RETRY_ENABLED = features.RETRY_MAX > 0;
 
