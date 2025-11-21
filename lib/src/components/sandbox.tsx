@@ -19,6 +19,7 @@ export type SandBox = {
     window: WindowProxy,
     close(eraseStream: boolean): Promise<void>
 }
+let sandBoxRoot: HTMLDivElement | ShadowRoot | undefined = undefined
 export async function createSandbox<TModuleProps extends Record<string, unknown>>(
     moduleUrl:string, sandboxProps: SandboxProps<TModuleProps>
 ) {
@@ -94,13 +95,23 @@ export async function createSandbox<TModuleProps extends Record<string, unknown>
             contentDocument.body.append(sandboxInit);
         }, { once: true, signal: abortController.signal })
 
-        if (!('attachShadow' in document.body)) 
-            return window.document.body.append(iframe)
+        if (sandBoxRoot) {
+            sandBoxRoot.append(iframe)
+            return;
+        }
+
+        if (typeof document.body.attachShadow === 'undefined') {
+            sandBoxRoot = document.createElement('div')
+            sandBoxRoot.style = "display: none;"
+            sandBoxRoot.append(iframe)
+            document.body.append(sandBoxRoot);
+            return;
+        }
 
         const shadowWrapper = document.createElement('div')
         shadowWrapper.style = "display: none;"
-        const shadow = shadowWrapper.attachShadow({ mode: "closed" });
-        shadow.appendChild(iframe);
+        sandBoxRoot = shadowWrapper.attachShadow({ mode: "closed" });
+        sandBoxRoot.appendChild(iframe);
         window.document.body.append(shadowWrapper)
     })
 }
