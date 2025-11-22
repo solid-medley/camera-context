@@ -1,6 +1,6 @@
 import { Accessor, Component, createEffect, createMemo, createSignal, JSX } from 'solid-js';
 import { useCamera } from '../camera-context';
-import { createAbortSignal } from '../helpers/create-abort';
+import { createStaticStream } from '../helpers/static-image';
 
 type VideoElementProps = Omit<JSX.VideoHTMLAttributes<HTMLVideoElement>, 'src' | 'srcObject' | 'ref' | 'loop'>;
 export type VideoPlayerProps =
@@ -37,16 +37,9 @@ export type StreamPlayerProps = {
 }
 const StreamPlayer: Component<StreamPlayerProps> = ({ stream, elementProps }) => {
 
-    const [ref, setRef] = createSignal<HTMLVideoElement>()
-    const [abortSignal] = createAbortSignal();
+    const [ref, setRef] = createSignal<HTMLVideoElement>()    
+    const staticStream = createStaticStream();
 
-    const staticStream = () => {
-        if (!ref()) return null;
-        // TODO width & height can be calculated with ratio
-        const width = stream()?.getVideoTracks()[0].getSettings().width ?? ref()?.getBoundingClientRect().width ?? 100;
-        const height = stream()?.getVideoTracks()[0].getSettings().height ?? ref()?.getBoundingClientRect().height ?? 100;
-        return createFakeStaticStream(width, height, abortSignal)
-    }
 
     createEffect(() => {
         console.log('stream', stream()?.id)
@@ -71,56 +64,4 @@ const StreamPlayer: Component<StreamPlayerProps> = ({ stream, elementProps }) =>
     }, [stream, ref])
 
     return <video {...elementProps} ref={setRef} loop playsinline />
-}
-
-// TODO this can be pre-generated, and perhaps optimized
-const numFrames = 6;
-function createFakeStaticStream(streamWidth: number, streamHeight: number, abortSignal: AbortSignal) {
-
-    if (streamWidth === 0 || streamHeight === null || abortSignal.aborted) return null
-    
-    const width = Math.ceil(streamWidth)
-    const height = Math.ceil(streamHeight)
-
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    canvas.style.display = 'none'
-
-    const ctx = canvas.getContext('2d')!;
-
-    ctx.fillStyle = '#333';           // dark gray background
-    ctx.fillRect(0, 0, width, height);
-
-    const frames = new Array<ImageData>(numFrames)
-    for (let frameIndex = 0; frameIndex <= numFrames; frameIndex++) {
-        const imageData = ctx.createImageData(width, height);
-
-        const pixels = imageData.data;
-        for (let i = 0; i < pixels.length; i += 4) {
-            const v = Math.random() * 255;
-            pixels[i] = pixels[i + 1] = pixels[i + 2] = v;
-            pixels[i + 3] = 255;
-        }
-        ctx.putImageData(imageData, 0,0)
-
-        // Optional: draw something else
-        ctx.fillStyle = 'white';
-        ctx.font = '20px sans-serif';
-        ctx.fillText('No Signal', 10, 30);
-
-        frames[frameIndex] = ctx.getImageData(0,0,width, height);
-    }
-
-    // TODO this should be abortable or at least pausable
-    let currentFrame = 0;
-    const iii = setInterval(() => {
-        ctx.putImageData(frames[currentFrame], 0, 0);
-        currentFrame = (currentFrame + 1) % frames.length;
-    }, 10);
-
-    abortSignal.addEventListener('abort', () => clearInterval(iii), { once: true })
-
-    const stream = canvas.captureStream(12);
-    return Object.defineProperty(stream, 'id', { value: 'no-signal', writable: true });
 }

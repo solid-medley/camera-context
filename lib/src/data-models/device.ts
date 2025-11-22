@@ -1,4 +1,3 @@
-
 export type UserMediaState = {
 	permission: MediaPermission
     camera: Camera | undefined
