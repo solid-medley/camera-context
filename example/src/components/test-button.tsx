@@ -1,16 +1,17 @@
 import { Component } from 'solid-js';
 import { useCamera } from '@solid-medley/camera-context';
+import { VideoDeviceSelector } from '@solid-medley/camera-context/components';
 
 export const TestButton: Component = () => {
 
-    const { requestPermission, stopStreaming, active, idle, faulted } = useCamera();
+    const { requestPermission, stopStreaming, active, idle, faulted, has } = useCamera();
 
     async function getPermissionFront() {
-        debugger;
         await requestPermission({
             video: {
                 facingMode: 'user'
-            }
+            },
+            audio: true
         });
     }
     async function getPermissionBack() {
@@ -21,8 +22,15 @@ export const TestButton: Component = () => {
         });
     }
     return <>
-        <button disabled={active()} onClick={getPermissionBack}>Request Device Cam</button> 
-        <button disabled={active()} onClick={getPermissionFront}>Request Face Cam</button> 
-        <button disabled={idle() || faulted()} onClick={stopStreaming}>Stop</button> 
+        <div>
+            <button disabled={active() || has('pending')} onClick={getPermissionBack}>Request Device Cam</button>
+            <button disabled={active() || has('pending')} onClick={getPermissionFront}>Request Face Cam</button>
+            <button disabled={idle() || faulted() || has('pending')} onClick={stopStreaming}>Stop</button>
+        </div>
+        <div>
+            <p>This doesn't change the camera yet</p>
+            {/* Disable for now */}
+            <VideoDeviceSelector disabled />
+        </div>
     </>
 }

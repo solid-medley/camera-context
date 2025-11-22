@@ -54,15 +54,14 @@ export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ appName
 
         setState(s => ({ ...s!, permission: 'pending' }));
 
-        if (!!mediaStream() || !!sandbox()) closeMediaStreamInternal(false);
-        setSandbox(await createMediaAccessManager(constraints))
+        if (!!mediaStream() || !!sandbox()) await closeMediaStreamInternal(false);
+        const requestSandbox = await createMediaAccessManager(constraints)
+        setSandbox(requestSandbox)
 
-        const result = await send(sandbox()!.window, 'requestPermission', constraints)
+        const result = await send(requestSandbox!.window, 'requestPermission', constraints)
 
         if (RETRY_ENABLED && matchesPermission(result.permission, ...retryAblePermissions)) {
         
-            // await stopCameraStream(true);
-
             requestAttempt++;
             if (requestAttempt > features.RETRY_MAX) {
                 result.permission = 'error:inuse'
@@ -95,14 +94,8 @@ export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ appName
         await closeMediaStream(mediaStream());
         setMediaStream(undefined);
 
-        // // Stop stream in owner window
-        // if (!deleteStream) {
-        //     await send(sandbox()!.window, 'stopStreaming', undefined as never)
-        //     setState(s => ({ ...s!, permission: 'unknown' }));
-        //     return
-        // }
-
         // Kill stream in owner window
+        if (!sandbox()) return;
         await send(sandbox()!.window, 'stopStream', undefined as never)
         await sandbox()!.close(deleteStream);
         setSandbox(undefined)
@@ -114,12 +107,11 @@ export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ appName
             permission: 'unknown',
             camera: undefined,
             stream: undefined,
-            devices: undefined,
             stopStreaming(){ return Promise.resolve<void>(void 0)}
         });
         setRef({
             state: state as Accessor<UserMediaState>,
-            requestPermission:(c: MediaStreamConstraints) => requestPermission(c, true),
+            requestPermission:(c: MediaStreamConstraints) => requestPermission(c),
             stopStreaming
         });
     })

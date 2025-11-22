@@ -1,4 +1,4 @@
-import { requestMediaPermission } from '../helpers/camera-helper'
+import { requestMediaPermission } from '../helpers/media-helper'
 import type { UserMediaState } from "../data-models/device";
 import { sandboxModule } from "./sandbox.module";
 import { Accessor } from 'solid-js';
@@ -46,11 +46,10 @@ export default sandboxModule<MediaAccessManagerProps>(import.meta, async ({
     let mediaStream: MediaStream | undefined = undefined;
     async function requestPermission(constraints: MediaStreamConstraints) {
         if (!!mediaStream) {
-            debugger;
             await endStream();
         }
 
-        const userMediaResult = await requestMediaPermission(constraints, true, appName)
+        const userMediaResult = await requestMediaPermission(constraints, appName)
         if (userMediaResult.stream) {
 
             mediaStream = userMediaResult.stream;

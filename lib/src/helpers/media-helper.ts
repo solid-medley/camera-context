@@ -9,7 +9,7 @@ import { getBrowserMetadata } from './browser-metadata'
 import { errorToString, logModule } from './debug-helper';
 import { features } from '../constants';
 
-logModule('camera-helper', import.meta)
+logModule('media-helper', import.meta)
 
 function getLocalStorageName(appName: string, key: string) {
 	return `${key}@${appName}`
@@ -19,7 +19,7 @@ function getStoredCameraId(appName: string) {
 	return localStorage.getItem(getLocalStorageName(appName, 'camera')) ?? undefined
 }
 
-function storeCameraId(appName: string, id: string | undefined) {
+function storeCameraId(appName: string, id: string | 0 | undefined) {
 	if (!id) return localStorage.removeItem(getLocalStorageName(appName, 'camera'))
 	return localStorage.setItem(getLocalStorageName(appName, 'camera'), id)
 }
@@ -38,33 +38,30 @@ function combineConstraints(constraints: MediaStreamConstraints, deviceId?: stri
 	}
 }
 
-async function getDevices(): Promise<DeviceResult> {
-	if (!navigator.mediaDevices?.enumerateDevices) return {
-		videoDevices: undefined
-	}
+export async function getMediaDeviceList(): Promise<DeviceResult> {
+	if (!navigator.mediaDevices?.enumerateDevices) return 'not-available'
 
 	try {
 		const devices = await navigator.mediaDevices?.enumerateDevices() as InputDeviceInfo[]
-		const videoDevices = devices
-			.filter(device => device.kind === 'videoinput')
-			.map(flatDeviceInput)
+		const flatDevices = await Promise.all(devices
+			// AudioDevices shop up with empty label if no permission is given
+			.filter(device => !!device.deviceId)
+			.map(flatDeviceInput))
 		return {
-			videoDevices
+			videoInput: flatDevices.filter(device => device.kind === 'videoinput'),
+			audioInput: flatDevices.filter(device => device.kind === 'audioinput'),
+			audioOutput: flatDevices.filter(device => device.kind === 'audiooutput')
 		}
 	} catch (err) {
 		// This may happen when the tab falls asleep and we try to list devices.
 		// The "user interaction" is no longer valid then.
-		if ((err as Error).message.includes('Illegal invocation')) return {
-			videoDevices: []
-		}
+		if ((err as Error).message.includes('Illegal invocation')) return 'not-enumerated'
 		throw err
 	}
 }
 
 type RequestResult = [permission: MediaPermission, camera?: Camera | undefined, stream?: MediaStream | undefined];
-export async function requestMediaPermission(
-	constraints: MediaStreamConstraints, enumerateDevices: boolean, appName: string
-) : Promise<UserMediaState> {
+export async function requestMediaPermission(constraints: MediaStreamConstraints, appName: string) : Promise<UserMediaState> {
 	
 
 	const storedCamera = getStoredCameraId(appName)
@@ -84,11 +81,9 @@ export async function requestMediaPermission(
 		})
 		.catch((err: MediaPermissionsError) => [handleMediaPermissionsError(err, appName)] as RequestResult)
 		
-	const devices = enumerateDevices ? await getDevices() : undefined
 	return {
 		permission,
 		camera,
-		devices,
 		stream
 	}
 }
@@ -165,7 +160,8 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 		})
 
 	if (!mediaStream) return [{
-		id: requestedCamera!,
+		uid: await createDeviceUid(undefined),
+		deviceId: requestedCamera!,
 		label: '?',
 		facing: 'loading',
 		name: '',
@@ -175,7 +171,7 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 	if (!mediaStream.active || !mediaStream.getTracks()) {
 		storeCameraId(appName, requestedCamera!)
 		return [{
-			id: requestedCamera!,
+			uid: requestedCamera!,
 			label: 'X',
 			facing: 'loading',
 			name: 'X',
@@ -183,26 +179,72 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 		}]
 	}
 
+	const uid = await createDeviceUid(mediaStream.getVideoTracks()[0]);
 	const deviceId = mediaStream.getVideoTracks()[0].getSettings().deviceId!
-	storeCameraId(appName, deviceId)
+	const groupId = mediaStream.getVideoTracks()[0].getSettings().groupId!
+
+	storeCameraId(appName, uid)
 
 	return [{
-		id: deviceId,
+		uid: uid, 
+		deviceId,
+		groupId,
 		name: mediaStream.getVideoTracks()[0].label,
 		label: mediaStream.getVideoTracks()[0].label.split('(')[0].split(',')[0].trim(),
+		videoTrackId: mediaStream.getVideoTracks()[0].id,
 		facing: getBrowserMetadata().platform.type === 'desktop'
 			? 'desktop' :
 			mediaStream.getVideoTracks()[0].getSettings().facingMode as 'user' | 'environment',
 		streamId: mediaStream.id
 	}, mediaStream]
 }
-function flatDeviceInput(inputDevice: InputDeviceInfo): FlatMediaDeviceInfo {
+
+async function flatDeviceInput(inputDevice: InputDeviceInfo): Promise<FlatMediaDeviceInfo> {
+	const capabilities = typeof inputDevice.getCapabilities === 'function' ? inputDevice.getCapabilities() : { }
 	return {
+		uid: await createDeviceUid(inputDevice),
 		deviceId: inputDevice.deviceId,
 		groupId: inputDevice.groupId,
 		kind: inputDevice.kind,
 		label: inputDevice.label,
-		capabilities: inputDevice.getCapabilities()
+		capabilities
 	}
 }
 
+/** Apparently, the deviceId doesn't transfer between realms (frames). \
+  * To work around this, we make it a non-whitespace hash with an insecure algorithm.
+  * 
+  * We could just use the label of course, but this looks more like an id.
+  */
+async function createDeviceUid(device: InputDeviceInfo | MediaStreamTrack | undefined) {
+	if (device === undefined) return 0;
+	
+	const deviceLabel = device.label ?? 'any';
+
+	const deviceKind = device instanceof MediaStream
+		? device.kind
+		: device.kind.replace('input', '').replace('output', '') 
+		
+	const deviceFacing = typeof device.getCapabilities !== 'function'
+		? 'output'
+		: device.getCapabilities().facingMode?.join(',') ?? 'any'
+		
+	const uniqueLabel = [deviceLabel.trim(), deviceKind.trim(), deviceFacing.trim()].join('+')
+
+	// Make it look like an id with a built-in function
+	return await shortHash(uniqueLabel)
+		// Erase the equals with an arbitrary character, we don't decrypt anyway.
+		// This is just a bit of fun to erase non-letter characters
+		.then(h => h.replaceAll('=', 'ɴ'))
+		.then(h => h.replaceAll('+', 'ʀ'))
+		.then(h => h.replaceAll('-', 'ʀ'))
+		.then(h => h.replaceAll('/', 'ʀ'))
+		.then(h => h.replaceAll('\\', 'ʀ'))
+}
+
+async function shortHash(str: string) {
+  const data = new TextEncoder().encode(str);
+  const full = await crypto.subtle.digest("SHA-256", data);
+  const bytes = new Uint8Array(full).slice(0, 8); // 8 bytes
+  return btoa(String.fromCharCode(...bytes));
+}

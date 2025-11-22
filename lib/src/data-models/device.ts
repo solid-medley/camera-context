@@ -2,12 +2,14 @@
 export type UserMediaState = {
 	permission: MediaPermission
     camera: Camera | undefined
-    devices: DeviceResult
 	stream: MediaStream | undefined
 }
 
 export type Camera = {
-	id: string
+	uid: string | 0
+	deviceId?: string
+	groupId?: string
+	videoTrackId?: string
 	label: string
 	name: string
 	facing: 'user' | 'environment' | 'desktop' | 'loading' | undefined,
@@ -16,14 +18,21 @@ export type Camera = {
 
 export type FlatMediaDeviceInfo = 
 	& Omit<MediaDeviceInfo, 'toJSON'>
-	& { capabilities: MediaTrackCapabilities }
+	& { 
+		uid: string | 0,
+		capabilities: MediaTrackCapabilities
+	}
 export type DeviceResult = 
 	// not enumerated
-	| undefined
+	| 'not-enumerated'
 	// No enumerate devices
-	| { videoDevices: undefined }
+	| 'not-available'
 	// Proper result
-	| { videoDevices: FlatMediaDeviceInfo[] }
+	| { 
+		videoInput: FlatMediaDeviceInfo[], 
+		audioInput: FlatMediaDeviceInfo[], 
+		audioOutput: FlatMediaDeviceInfo[] 
+	}
 
 export type MediaPermission =
 	'granted' | 'denied' | 'denied:system' | 'error:unexpected' | 'error:inuse' | 'error:no-support' |
