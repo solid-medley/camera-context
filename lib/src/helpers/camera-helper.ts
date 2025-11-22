@@ -61,7 +61,7 @@ async function getDevices(): Promise<DeviceResult> {
 	}
 }
 
-type RequestResult = [permission: MediaPermission, camera?: Camera | undefined];
+type RequestResult = [permission: MediaPermission, camera?: Camera | undefined, stream?: MediaStream | undefined];
 export async function requestMediaPermission(
 	constraints: MediaStreamConstraints, enumerateDevices: boolean, appName: string
 ) : Promise<UserMediaState> {
@@ -70,15 +70,16 @@ export async function requestMediaPermission(
 	const storedCamera = getStoredCameraId(appName)
 	const combinedConstraints = combineConstraints(constraints, storedCamera)
 
-	const [permission, camera] = await requestMediaPermissions(combinedConstraints)
+	const [permission, camera, stream] = await requestMediaPermissions(combinedConstraints)
 		.then(async (success) => {
 			// @ts-expect-error // TODO figure out when this happens
 			if (!success) return ['denied-unknown'] as RequestResult
 
-			// Just try this once to see if the stream starts, retry stored camera in case it changed
+			const [camera, stream] = await getCamera(combinedConstraints, appName)
 			return [
 				'granted', 
-				await getCamera(combinedConstraints, appName)
+				camera, 
+				stream
 			] as RequestResult
 		})
 		.catch((err: MediaPermissionsError) => [handleMediaPermissionsError(err, appName)] as RequestResult)
@@ -87,7 +88,8 @@ export async function requestMediaPermission(
 	return {
 		permission,
 		camera,
-		devices
+		devices,
+		stream
 	}
 }
 
@@ -139,8 +141,8 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 	}
 }
 
-
-async function getCamera(constraints: MediaStreamConstraints, appName: string, id?: string): Promise<Camera> {
+type CameraResult = [camera: Camera, stream?: MediaStream | undefined]
+async function getCamera(constraints: MediaStreamConstraints, appName: string, id?: string): Promise<CameraResult> {
 
 	const storedCamera = getStoredCameraId(appName)
 	const requestedCamera = id ?? storedCamera ?? undefined
@@ -162,37 +164,37 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 			return undefined
 		})
 
-	if (!mediaStream) return {
+	if (!mediaStream) return [{
 		id: requestedCamera!,
 		label: '?',
 		facing: 'loading',
 		name: '',
-		stream: undefined
-	}
+		streamId: undefined
+	}]
 
 	if (!mediaStream.active || !mediaStream.getTracks()) {
 		storeCameraId(appName, requestedCamera!)
-		return {
+		return [{
 			id: requestedCamera!,
 			label: 'X',
 			facing: 'loading',
 			name: 'X',
-			stream: undefined
-		}
+			streamId: undefined
+		}]
 	}
 
 	const deviceId = mediaStream.getVideoTracks()[0].getSettings().deviceId!
 	storeCameraId(appName, deviceId)
 
-	return {
+	return [{
 		id: deviceId,
 		name: mediaStream.getVideoTracks()[0].label,
 		label: mediaStream.getVideoTracks()[0].label.split('(')[0].split(',')[0].trim(),
 		facing: getBrowserMetadata().platform.type === 'desktop'
 			? 'desktop' :
 			mediaStream.getVideoTracks()[0].getSettings().facingMode as 'user' | 'environment',
-		stream: mediaStream
-	}
+		streamId: mediaStream.id
+	}, mediaStream]
 }
 function flatDeviceInput(inputDevice: InputDeviceInfo): FlatMediaDeviceInfo {
 	return {

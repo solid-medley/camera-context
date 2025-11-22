@@ -3,17 +3,7 @@ export type UserMediaState = {
 	permission: MediaPermission
     camera: Camera | undefined
     devices: DeviceResult
-}
-
-/**
- * The MediaStream, the MediaStreamTrack, nor the VideoFrame objects are transferrable or DataCloneable
- * Because of that we pump it into a MessageChannel instead.
- * 
- * We revert this before exposing it to any library consumers.
- */
-export type TransferrableUserMediaState = Omit<UserMediaState, 'camera'> & {
-    camera: TransferrableCamera | undefined
-    devices: DeviceResult
+	stream: MediaStream | undefined
 }
 
 export type Camera = {
@@ -21,11 +11,9 @@ export type Camera = {
 	label: string
 	name: string
 	facing: 'user' | 'environment' | 'desktop' | 'loading' | undefined,
-	stream: MediaStream | undefined
-}
-export type TransferrableCamera = Omit<Camera, 'stream'> & {
 	streamId: string | undefined
 }
+
 export type FlatMediaDeviceInfo = 
 	& Omit<MediaDeviceInfo, 'toJSON'>
 	& { capabilities: MediaTrackCapabilities }

@@ -1,29 +1,28 @@
 import { createContext, ParentComponent, useContext, children, createSignal, createMemo, Accessor } from 'solid-js';
-import type { MediaPermission, UserMediaState } from './data-models/device';
+import type { Camera, MediaPermission, UserMediaState } from './data-models/device';
 import { MediaAccessMarshal } from './components/media-access-marshal';
 import { faultyMediaPermissions, idleMediaPermissions } from './constants';
 import { MediaAccessManager } from './components/media-access-manager';
 import { logModule } from './helpers/debug-helper';
+import { MediaConstraints } from './data-models/constraints';
 
 logModule('camera-context', import.meta)
 
-type VideoConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'echoCancellation'>
-type AudioConstraints = Omit<MediaTrackConstraintSet, 'deviceId' | 'groupId' | 'displaySurface' | 'facingMode'>
-export type MediaConstraints = Omit<MediaStreamConstraints, 'video' | 'audio' | 'preferCurrentTab'> & {
-  video?: VideoConstraints,
-  audio?: false | AudioConstraints
-};
 type CameraContextProps = {
-  constraints?: MediaConstraints,
   appName: string
 }
 type CameraContext = {
-  requestPermission(): Promise<UserMediaState>
-  stop(): Promise<void>
-  hasPermission(...permissionsToCheck: MediaPermission[]): boolean;
-  canRequest: Accessor<boolean>
+  requestPermission(constraints?: MediaConstraints): Promise<UserMediaState>
+  stopStreaming(): Promise<void>
+  
+  permission: Accessor<MediaPermission | undefined>
+  has(...permissionsToCheck: MediaPermission[]): boolean;
+  active: Accessor<boolean>
+  idle: Accessor<boolean>
   faulted: Accessor<boolean>,
-  state: Accessor<UserMediaState>
+
+  camera: Accessor<Camera | undefined>
+  stream: Accessor<MediaStream | undefined>
 };
 
 const defaultConstraints: MediaStreamConstraints = {
@@ -35,11 +34,16 @@ const defaultConstraints: MediaStreamConstraints = {
 
 const cameraContext = createContext<CameraContext>({
   requestPermission: () => Promise.reject<UserMediaState>(new Error("Not initialized")),
-  stop: () => Promise.reject<void>(new Error("Not initialized")),
-  hasPermission: () => false,
-  canRequest: () => false,
+  stopStreaming: () => Promise.reject<void>(new Error("Not initialized")),
+  
+  permission: (): MediaPermission => 'unknown',
+  has: () => false,
+  active: () => false,
+  idle: () => false,
   faulted: () => false,
-  state: (): UserMediaState => ({ permission: 'unknown', camera: undefined, devices: undefined })
+  
+  camera: (): Camera | undefined => undefined,
+  stream: (): MediaStream | undefined => undefined
 })
 
 export const FaultyContext: ParentComponent<{ ctx: CameraContext }> = (props) => {
@@ -59,11 +63,31 @@ function checkBrowserSupport() {
 
 export const CameraContextProvider: ParentComponent<CameraContextProps> = (props) => {
 
-  const constraints = props.constraints || defaultConstraints;
-
-  if (!checkBrowserSupport()) return <FaultyContext children={props.children} ctx={faultyContext()} />
+  if (!checkBrowserSupport()) return <FaultyContext children={undefined} ctx={faultyContext()} />
 
   const [mediaState, setState] = createSignal<MediaAccessManager>();
+  
+  const state = createMemo(() => {
+    return mediaState()?.state()
+  }, [mediaState])
+
+  const permission = createMemo(() => {
+    return state()?.permission
+  }, [state])
+  
+
+  const camera = createMemo(
+    () => state()?.camera,
+    [state]
+  )
+  const stream = createMemo(
+    () => state()?.stream,
+    [state, () => {
+      console.log('check')
+      return true
+    }]
+  )
+  
   const testIllustration = createMemo(() => {
 
     const permission = mediaState()?.state().permission
@@ -72,55 +96,59 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
   }, [mediaState])
 
   const faulted = createMemo(() => {
-    const state = mediaState()?.state()
-    return hasPermission(state, ...faultyMediaPermissions);
-  }, [mediaState])
+    return matchesPermission(permission(), ...faultyMediaPermissions);
+  }, [permission])
 
-  const canRequest = createMemo(() => {
-    const state = mediaState()?.state()
-    return hasPermission(state, idleMediaPermissions);
-  }, [mediaState, faulted])
+  const idle = createMemo(() => {
+    return matchesPermission(permission(), idleMediaPermissions);
+  }, [permission])
 
-  function requestPermission() {
+  const active = createMemo(() => {
+    return matchesPermission(permission(), 'granted') && !!stream();
+  }, [permission, stream])
+
+  function requestPermission(constraints?: MediaConstraints) {
     if (!mediaState()) return Promise.reject<UserMediaState>(new Error('Not yet initialized'))
-    return mediaState()!.requestPermission();
+    return mediaState()!.requestPermission(constraints ?? defaultConstraints);
   }
-  function stop() {
+  function stopStreaming() {
     if (!mediaState()) return Promise.reject<void>(new Error('Not yet initialized'))
-    return mediaState()!.stop();
+    return mediaState()!.stopStreaming();
   }
-
-  const state = createMemo(() => mediaState()?.state() ?? cameraContext.defaultValue.state(),
-    [mediaState, () => mediaState()?.state()])
 
   return (
     <cameraContext.Provider value={{
       requestPermission,
-      stop,
-      hasPermission: (permissionsToCheck) => hasPermission(mediaState()?.state, permissionsToCheck),
-      canRequest,
+      stopStreaming,
+
+      permission: permission,
+      has: (...p) => hasPermission(state(), ...p),
+      idle,
+      active,
       faulted,
-      state
+
+      camera,
+      stream
     }}>
-      <MediaAccessMarshal constraints={constraints} appName={props.appName} ref={setState} />
+      <MediaAccessMarshal appName={props.appName} ref={setState} />
       {testIllustration()}
       {children(() => props.children)()}
     </cameraContext.Provider>
   );
 }
 
-export function useCamera() { return useContext(cameraContext); }
-
-export function hasPermission(state: Accessor<UserMediaState | undefined> | undefined | UserMediaState, ...permissionsToCheck: MediaPermission[]) {
-  if (!state) return false;
-  const stateValue = typeof state === 'function' ? state() : state
-  
-  return matchesPermission(stateValue?.permission, ...permissionsToCheck)
+export function useCamera() { 
+  return useContext(cameraContext); 
 }
-export function matchesPermission(permission: Accessor<MediaPermission | undefined> | undefined | MediaPermission, ...permissionsToCheck: MediaPermission[]) {
-  if (!permission) return false;
-  const permissionValue = typeof permission === 'function' ? permission() : permission
+
+export function hasPermission(state: undefined | UserMediaState, ...permissionsToCheck: MediaPermission[]) {
+  if (!state) return false;
   
-  if (!permissionValue) return false
-  return permissionsToCheck.includes(permissionValue);
+  return matchesPermission(state.permission, ...permissionsToCheck)
+}
+export function matchesPermission(permission: undefined | MediaPermission, ...permissionsToCheck: MediaPermission[]) {
+  if (!permission) return false;
+  
+  if (!permission) return false
+  return permissionsToCheck.includes(permission);
 }

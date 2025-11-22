@@ -1,5 +1,5 @@
 
-export async function stopStream(stream: MediaStream | null | undefined) {
+export async function closeMediaStream(stream: MediaStream | null | undefined) {
     if (!stream) return;
 
     // TODO figure something out

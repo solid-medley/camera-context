@@ -1,22 +1,21 @@
 import { requestMediaPermission } from '../helpers/camera-helper'
-import type { TransferrableUserMediaState, UserMediaState } from "../data-models/device";
+import type { UserMediaState } from "../data-models/device";
 import { sandboxModule } from "./sandbox.module";
 import { Accessor } from 'solid-js';
 
 // These imports need to be await import for the bundler
 const { registerChildHandlers, forwardEvent, sendCallback } = await import("./sandbox.helpers");
 const { logModule }  = await import('../helpers/debug-helper');
-const { stopStream } = await import("../helpers/stream-helper");
+const { closeMediaStream } = await import("../helpers/stream-helper");
 
 logModule('media-access-manager', import.meta)
 
 export type MediaAccessManager = {
     state: Accessor<UserMediaState>
-    requestPermission(): Promise<UserMediaState>
-    stop(): Promise<void>
+    requestPermission(constraints: MediaStreamConstraints): Promise<UserMediaState>
+    stopStreaming(): Promise<void>
 }
 export type MediaAccessManagerConfig = {
-    constraints: MediaStreamConstraints
     appName: string
 }
 
@@ -36,51 +35,46 @@ export type MediaAccessManagerProps =
 
 export default sandboxModule<MediaAccessManagerProps>(import.meta, async ({ 
     parent, abortSignal, appName, 
-    constraints, postStream 
+    postStream 
 }) => {
 
     registerChildHandlers(parent, abortSignal, async (event) => {
         await forwardEvent(event, 'requestPermission', requestPermission)
-        await forwardEvent(event, 'stop', stop)
+        await forwardEvent(event, 'stopStream', stopStream)
     })
 
     let mediaStream: MediaStream | undefined = undefined;
-    async function requestPermission() {
+    async function requestPermission(constraints: MediaStreamConstraints) {
         if (!!mediaStream) {
             debugger;
             await endStream();
         }
 
         const userMediaResult = await requestMediaPermission(constraints, true, appName)
-        if (userMediaResult.camera?.stream) {
-            const { stream, ...camera } = userMediaResult.camera!
+        if (userMediaResult.stream) {
 
-            mediaStream = stream;
-            postStream(stream)
-            const transferrableCamera = {
-                ...camera,
-                streamId: stream?.id
-            }
+            mediaStream = userMediaResult.stream;
+            postStream(userMediaResult.stream)
 
-            await sendCallback(parent, 'requestPermission', { ...userMediaResult, camera: transferrableCamera })
+            await sendCallback(parent, 'requestPermission', { ...userMediaResult, stream: undefined })
             return
         }
 
 
-        await sendCallback(parent, 'requestPermission', userMediaResult as TransferrableUserMediaState)
+        await sendCallback(parent, 'requestPermission', userMediaResult)
     }
 
-    async function stop() {
+    async function stopStream() {
 
         await endStream();
-        await sendCallback(parent, 'stop', void 0);
+        await sendCallback(parent, 'stopStream', void 0);
     }
 
     async function endStream() {
 
         if (!mediaStream) return;
         postStream(undefined);
-        await stopStream(mediaStream)
+        await closeMediaStream(mediaStream)
         mediaStream = undefined;
     }
 });

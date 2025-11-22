@@ -5,20 +5,13 @@ import { VideoPlayer } from '@solid-medley/camera-context/components';
 // TODO figure out why this binding is necessary
 export const TestVideo: Component = () => {
 
-    const cameraContext = useCamera();
+    const { camera } = useCamera();
 
-    const returnData = createMemo(() => {
-
-    if (cameraContext.state().permission !== 'granted') return undefined;
     return <>
-        <p>{cameraContext.state().camera?.name}</p>
+        <p>{camera()?.name ?? 'no video stream'}</p>
         <VideoPlayer muted style={{
             width: '100%',
             "aspect-ratio": '1/1'
         }}/>
     </>
-
-    }, [cameraContext.state]);
-
-    return <>{returnData()}</>
 }

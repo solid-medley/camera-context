@@ -35,7 +35,7 @@ const callback = <T extends EventName>(name: T, data: EventReturnTypes[T]) => {
 
 export async function forwardEvent<T extends EventName>(event: MessageEvent, name: T, handler: (event: EventTypes[T]) => void | Promise<void>): Promise<void> {
     if (getCommandName(name) !== event.data.command as string) return;
-    await Promise.resolve(handler(event as EventTypes[T])).catch(err => { throw err });
+    await Promise.resolve(handler(event.data.data as EventTypes[T])).catch(err => { throw err });
 }
 
 const awaitCallBack = <T extends keyof EventTypes>(command: T) => new Promise<EventReturnTypes[T]>(res => {

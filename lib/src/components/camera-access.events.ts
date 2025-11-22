@@ -1,10 +1,10 @@
-import type { TransferrableUserMediaState } from "../data-models/device"
+import type { UserMediaState } from "../data-models/device"
 import { eventType, returnNothing, returnType, returnVoid } from "./sandbox.events"
 
 const events = {
     initialized: { name: 'initialized',  type: eventType(), returns: returnNothing() },
-    requestPermission: { name: 'requestPermission',  type: eventType(), returns: returnType<TransferrableUserMediaState>() },
-    stop: { name: 'stop',  type: eventType(), returns: returnVoid() },
+    requestPermission: { name: 'requestPermission',  type: eventType<MediaStreamConstraints>(), returns: returnType<UserMediaState>() },
+    stopStream: { name: 'stopStream',  type: eventType(), returns: returnVoid() },
 } as const
 
 // ------------------------------------------------------------------------

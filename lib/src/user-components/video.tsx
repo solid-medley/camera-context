@@ -26,11 +26,7 @@ export type ContextVideoPlayerProps = {
 }
 const ContextVideoPlayer: Component<ContextVideoPlayerProps> = ({elementProps}) => {
 
-    const cameraContext = useCamera();
-    const stream = createMemo(
-        () => cameraContext.state()?.camera?.stream, 
-        [cameraContext.state]
-    )
+    const { stream } = useCamera();
 
     return <StreamPlayer stream={stream} elementProps={elementProps} />
 }
@@ -43,6 +39,7 @@ const StreamPlayer: Component<StreamPlayerProps> = ({ stream, elementProps }) =>
     const [ref, setRef] = createSignal<HTMLVideoElement>()
     
     createEffect(() => {
+        console.log('stream', stream()?.id)
         const video = ref();
         if (!video) return;
         const activeStream = stream();
@@ -56,10 +53,11 @@ const StreamPlayer: Component<StreamPlayerProps> = ({ stream, elementProps }) =>
         }
 
         if (import.meta.env.DEV) {
-            video.setAttribute('data-stream', activeStream?.id ?? '')
-            video.setAttribute('data-srcObject', (video.srcObject! as MediaStream)?.id ?? '')
+            video.setAttribute('data-stream', activeStream?.id ?? 'no-signal')
+            if (!activeStream) video.removeAttribute('data-srcObject')
+            else video.setAttribute('data-srcObject', (video.srcObject! as MediaStream)?.id ?? '')
         }
-    })
+    }, [stream, ref])
 
     return <video {...elementProps} ref={setRef} loop />
 }

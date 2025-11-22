@@ -3,7 +3,7 @@ import { createSandbox, SandBox } from "./sandbox";
 import type { UserMediaState } from "../data-models/device";
 import { forMilliseconds } from "../helpers/timeout";
 import { hasPermission, matchesPermission } from "../camera-context";
-import { stopStream } from "../helpers/stream-helper";
+import { closeMediaStream } from "../helpers/stream-helper";
 import { createAbortSignal } from "../helpers/create-abort";
 import { features, retryAblePermissions } from "../constants";
 import { logModule } from "../helpers/debug-helper";
@@ -18,22 +18,21 @@ logModule('media-access-marshal', import.meta)
 
 const RETRY_ENABLED = features.RETRY_MAX > 0;
 
-
 export type MediaAccessMarshalProps = MediaAccessManagerConfig & {
     ref: Setter<MediaAccessManager | undefined>
 }
 
-export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ constraints, appName, ref: setRef }) => {
+export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ appName, ref: setRef }) => {
 
     const [abortSignal] = createAbortSignal();
 
     const [state, setState] = createSignal<UserMediaState>();
-    const [stream, setStream] = createSignal<MediaStream>();
+    const [mediaStream, setMediaStream] = createSignal<MediaStream>();
 
     const [sandbox, setSandbox] = createSignal<SandBox>()
     const uid = createUniqueId()
 
-    const createMediaAccessManager = () => createSandbox<MediaAccessManagerProps>(wrapperModule.url, {
+    const createMediaAccessManager = (constraints: MediaStreamConstraints) => createSandbox<MediaAccessManagerProps>(wrapperModule.url, {
         uid,
         abortSignal,
         allow: formatSandboxPermissions(constraints),
@@ -42,90 +41,91 @@ export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ constra
             : ""),
         props: {
             appName,
-            constraints,
-            postStream: setStream,
-        }
+            postStream: setMediaStream,
+        },
     });
 
     let requestAttempt = 0;
-    async function requestPermission(initial = true) {
+    async function requestPermission(constraints: MediaStreamConstraints, initial = true) {
         if (initial) requestAttempt = 0;
         // ANTI-LOOP
-        if (hasPermission(state, 'denied', 'denied:system', 'error:no-support', 'granted')) return state()!;
+        if (hasPermission(state(), 'denied', 'denied:system', 'error:no-support')) return state()!;
         if (requestAttempt > features.RETRY_MAX) return state()!;
 
         setState(s => ({ ...s!, permission: 'pending' }));
 
-        if (!sandbox()) setSandbox(await createMediaAccessManager())
-        else if (!!stream()) await stopCameraStream(false);
+        if (!!mediaStream() || !!sandbox()) closeMediaStreamInternal(false);
+        setSandbox(await createMediaAccessManager(constraints))
 
-        const result = await send(sandbox()!.window, 'requestPermission', undefined as never)
+        const result = await send(sandbox()!.window, 'requestPermission', constraints)
 
         if (RETRY_ENABLED && matchesPermission(result.permission, ...retryAblePermissions)) {
         
-            await stopCameraStream(true);
+            // await stopCameraStream(true);
 
             requestAttempt++;
             if (requestAttempt > features.RETRY_MAX) {
                 result.permission = 'error:inuse'
-                return setState(result as UserMediaState);
+                return setState({ ...result, stopStreaming } as UserMediaState);
             }
 
             await forMilliseconds(1500, abortSignal);
-            await requestPermission(false);
+            await requestPermission(constraints, false);
 
             return state()!;
         }
 
         requestAttempt = 0;
 
-        if (!result.camera?.streamId) return setState(result as UserMediaState)
-        if (result.camera.streamId !== stream()?.id) throw new Error('illegal state, incorrect stream id');
-        return setState({ ...result, camera: { ...result.camera, stream: stream() } })
+        if (!result.camera?.streamId) return setState(result as UserMediaState);
+
+        const stream = mediaStream();
+        if (result.camera.streamId !== stream?.id) throw new Error('illegal state, incorrect stream id');
+        return setState({ ...result, stream, stopStreaming })
     }
-    async function stop() {
+    async function stopStreaming() {
         setState(s => ({ ...s!, permission: 'pending' }));
-        await stopCameraStream(true)
+        await closeMediaStreamInternal(true)
         setState(s => ({ ...s!, permission: 'unknown' }));
     }
 
-    async function stopCameraStream(deleteStream: boolean) {
+    async function closeMediaStreamInternal(deleteStream: boolean) {
         
         // Stop stream here
-        await stopStream(stream());
-        setStream(undefined);
+        await closeMediaStream(mediaStream());
+        setMediaStream(undefined);
 
-        // Stop stream in owner window
-        if (!deleteStream) {
-            await send(sandbox()!.window, 'stop', undefined as never)
-            setState(s => ({ ...s!, permission: 'unknown' }));
-            return
-        }
+        // // Stop stream in owner window
+        // if (!deleteStream) {
+        //     await send(sandbox()!.window, 'stopStreaming', undefined as never)
+        //     setState(s => ({ ...s!, permission: 'unknown' }));
+        //     return
+        // }
 
         // Kill stream in owner window
-        await send(sandbox()!.window, 'stop', undefined as never)
+        await send(sandbox()!.window, 'stopStream', undefined as never)
         await sandbox()!.close(deleteStream);
         setSandbox(undefined)
     }
 
-    onMount(async () => {
-
-        setSandbox(await createMediaAccessManager());
+    onMount(() => {
 
         setState({
             permission: 'unknown',
             camera: undefined,
-            devices: undefined
+            stream: undefined,
+            devices: undefined,
+            stopStreaming(){ return Promise.resolve<void>(void 0)}
         });
         setRef({
             state: state as Accessor<UserMediaState>,
-            requestPermission,
-            stop
+            requestPermission:(c: MediaStreamConstraints) => requestPermission(c, true),
+            stopStreaming
         });
     })
 
     onCleanup(async () => {
-        await stop()
+        await stopStreaming()
     })
 
     return undefined

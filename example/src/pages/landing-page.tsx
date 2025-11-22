@@ -1,6 +1,6 @@
 import { Component } from 'solid-js';
-import { TestButton } from '../components/test-button';
 import { TestVideo } from '../components/test-video';
+import { TestButton } from '../components/test-button';
 
 export const LandingPage: Component = () => {
 
