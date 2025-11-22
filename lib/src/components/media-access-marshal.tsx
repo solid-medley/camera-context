@@ -1,6 +1,6 @@
 import { Accessor, Component, createSignal, createUniqueId, onCleanup, onMount, Setter, } from "solid-js";
 import { createSandbox, SandBox } from "./sandbox";
-import type { UserMediaState } from "../data-models/device";
+import type { StoppableStream, UserMediaState } from "../data-models/device";
 import { forMilliseconds } from "../helpers/timeout";
 import { hasPermission, matchesPermission } from "../camera-context";
 import { closeMediaStream } from "../helpers/stream-helper";
@@ -27,7 +27,7 @@ export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ appName
     const [abortSignal] = createAbortSignal();
 
     const [state, setState] = createSignal<UserMediaState>();
-    const [mediaStream, setMediaStream] = createSignal<MediaStream>();
+    const [mediaStream, setMediaStream] = createSignal<StoppableStream>();
 
     const [sandbox, setSandbox] = createSignal<SandBox>()
     const uid = createUniqueId()
@@ -91,8 +91,13 @@ export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ appName
     async function closeMediaStreamInternal(deleteStream: boolean) {
         
         // Stop stream here
-        await closeMediaStream(mediaStream());
-        setMediaStream(undefined);
+        const activeStream = mediaStream();
+        if(activeStream) setMediaStream(Object.assign(activeStream, { stopped: true }))
+        if(activeStream) setState((s) => ({ ...s!, stream: activeStream, stopStreaming }))
+        await closeMediaStream(activeStream);
+        setState((s) => ({ ...s!, stream: activeStream, stopStreaming }))
+        setState((s) => ({ ...s!, stream: undefined, stopStreaming }))
+        setMediaStream(undefined)
 
         // Kill stream in owner window
         if (!sandbox()) return;

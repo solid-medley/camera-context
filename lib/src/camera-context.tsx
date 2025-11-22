@@ -86,10 +86,7 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
   )
   const stream = createMemo(
     () => state()?.stream,
-    [state, () => {
-      console.log('check')
-      return true
-    }]
+    [state]
   )
 
   /// TODO other component
@@ -138,9 +135,9 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
     if (!mediaState()) return Promise.reject<UserMediaState>(new Error('Not yet initialized'))
     return mediaState()!.requestPermission(constraints ?? defaultConstraints);
   }
-  function stopStreaming() {
+  async function stopStreaming() {
     if (!mediaState()) return Promise.reject<void>(new Error('Not yet initialized'))
-    return mediaState()!.stopStreaming();
+    return await mediaState()!.stopStreaming();
   }
 
   return (
