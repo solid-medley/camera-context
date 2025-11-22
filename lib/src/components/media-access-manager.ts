@@ -1,20 +1,15 @@
-import { requestMediaPermission } from '../helpers/media-helper'
-import type { UserMediaState } from "../data-models/device";
+import { InternalMediaConstraints } from '../data-models/constraints';
+import { getMediaDeviceList, requestMediaPermission, storeCameraId } from '../helpers/media-helper'
 import { sandboxModule } from "./sandbox.module";
-import { Accessor } from 'solid-js';
 
 // These imports need to be await import for the bundler
 const { registerChildHandlers, forwardEvent, sendCallback } = await import("./sandbox.helpers");
 const { logModule }  = await import('../helpers/debug-helper');
 const { closeMediaStream } = await import("../helpers/stream-helper");
+const { matchesPermission } = await import("../data-models/device");
 
 logModule('media-access-manager', import.meta)
 
-export type MediaAccessManager = {
-    state: Accessor<UserMediaState>
-    requestPermission(constraints: MediaStreamConstraints): Promise<UserMediaState>
-    stopStreaming(): Promise<void>
-}
 export type MediaAccessManagerConfig = {
     appName: string
 }
@@ -44,7 +39,46 @@ export default sandboxModule<MediaAccessManagerProps>(import.meta, async ({
     })
 
     let mediaStream: MediaStream | undefined = undefined;
-    async function requestPermission(constraints: MediaStreamConstraints) {
+    async function requestPermission(constraints: InternalMediaConstraints) {
+       
+        const realConstraints = await formatConstraints(constraints)
+        const userMediaResult = await requestPermissionInternal(realConstraints);
+
+        if (matchesPermission(userMediaResult.permission, 'granted', 'error:inuse')) 
+            storeCameraId(appName, constraints.video?.uid)
+
+        await sendCallback(parent, 'requestPermission', userMediaResult)
+    }
+    
+    async function formatConstraints(constraints: InternalMediaConstraints): Promise<MediaStreamConstraints> {
+       
+        if (typeof constraints.video === 'undefined') return constraints
+        if (typeof constraints.video === 'boolean') return constraints
+
+        // TODO if preferLas get from localStorage
+        const uid = constraints.video.uid
+        if (!uid) return constraints
+
+        const devices = await getMediaDeviceList();
+        if (typeof devices === 'string') {
+            // As far as we know this never happens
+            debugger;
+            return constraints;
+        }
+
+        const realDevice = devices.videoInput.find(d => d.uid === uid)
+        if (!realDevice) {
+            // As far as we know this never happens
+            debugger;
+            return constraints;
+        }
+        const deviceConstraints = {...constraints};
+        deviceConstraints.video = { deviceId: { exact: realDevice.deviceId} }
+
+        return deviceConstraints
+    }
+
+    async function requestPermissionInternal(constraints: MediaStreamConstraints) {
         if (!!mediaStream) {
             await endStream();
         }
@@ -55,12 +89,10 @@ export default sandboxModule<MediaAccessManagerProps>(import.meta, async ({
             mediaStream = userMediaResult.stream;
             postStream(userMediaResult.stream)
 
-            await sendCallback(parent, 'requestPermission', { ...userMediaResult, stream: undefined })
-            return
+            return { ...userMediaResult, stream: undefined }
         }
 
-
-        await sendCallback(parent, 'requestPermission', userMediaResult)
+        return userMediaResult
     }
 
     async function stopStream() {

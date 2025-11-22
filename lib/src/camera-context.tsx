@@ -1,12 +1,14 @@
 import { createContext, ParentComponent, useContext, children, createSignal, createMemo, Accessor, onMount, createEffect, on } from 'solid-js';
 import type { Camera, DeviceResult, MediaPermission, UserMediaState } from './data-models/device';
-import { MediaAccessMarshal } from './components/media-access-marshal';
+import { MediaAccess, MediaAccessMarshal } from './components/media-access-marshal';
 import { faultyMediaPermissions, idleMediaPermissions } from './constants';
-import { MediaAccessManager } from './components/media-access-manager';
 import { logModule } from './helpers/debug-helper';
 import { MediaConstraints } from './data-models/constraints';
 import { getMediaDeviceList } from './helpers/media-helper';
 import { createAbortSignal } from './helpers/create-abort';
+
+// This needs to be a dynamic import for the bundler
+const { hasPermission, matchesPermission } = await import('./data-models/device')
 
 logModule('camera-context', import.meta)
 
@@ -16,6 +18,7 @@ type CameraContextProps = {
 type CameraContext = {
   requestPermission(constraints?: MediaConstraints): Promise<UserMediaState>
   stopStreaming(): Promise<void>
+  changeVideoInput(deviceId: string): Promise<void>
   mediaDevices: Accessor<DeviceResult>,
   
   permission: Accessor<MediaPermission | undefined>
@@ -38,6 +41,7 @@ const defaultConstraints: MediaStreamConstraints = {
 const cameraContext = createContext<CameraContext>({
   requestPermission: () => Promise.reject<UserMediaState>(new Error("Not initialized")),
   stopStreaming: () => Promise.reject<void>(new Error("Not initialized")),
+  changeVideoInput: () => Promise.reject<void>(new Error("Not initialized")),
   mediaDevices: (): DeviceResult => 'not-enumerated',
   
   permission: (): MediaPermission => 'unknown',
@@ -69,7 +73,7 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
 
   if (!checkBrowserSupport()) return <FaultyContext children={undefined} ctx={faultyContext()} />
 
-  const [mediaState, setState] = createSignal<MediaAccessManager>();
+  const [mediaState, setState] = createSignal<MediaAccess>();
   
   const state = createMemo(() => {
     return mediaState()?.state()
@@ -139,11 +143,16 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
     if (!mediaState()) return Promise.reject<void>(new Error('Not yet initialized'))
     return await mediaState()!.stopStreaming();
   }
+  async function changeVideoInput(deviceId: string) {
+    if (!mediaState()) return Promise.reject<void>(new Error('Not yet initialized'))
+    return await mediaState()!.changeVideoInput(deviceId);
+  }
 
   return (
     <cameraContext.Provider value={{
       requestPermission,
       stopStreaming,
+      changeVideoInput,
       mediaDevices,
 
       permission: permission,
@@ -164,16 +173,4 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
 
 export function useCamera() { 
   return useContext(cameraContext); 
-}
-
-export function hasPermission(state: undefined | UserMediaState, ...permissionsToCheck: MediaPermission[]) {
-  if (!state) return false;
-  
-  return matchesPermission(state.permission, ...permissionsToCheck)
-}
-export function matchesPermission(permission: undefined | MediaPermission, ...permissionsToCheck: MediaPermission[]) {
-  if (!permission) return false;
-  
-  if (!permission) return false
-  return permissionsToCheck.includes(permission);
 }

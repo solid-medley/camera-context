@@ -9,3 +9,7 @@ type SelectedMediaConstraints = {
   audio: AudioConstraints
 };
 export type MediaConstraints = Omit<MediaStreamConstraints, 'video' | 'audio' | 'preferCurrentTab'> & SelectedMediaConstraints
+export type InternalMediaConstraints = Omit<MediaStreamConstraints, 'video' | 'audio'> & {
+  audio?: MediaStreamConstraints['audio'] & { usePrevious?:boolean, uid?: string }
+  video?: MediaStreamConstraints['video'] & { usePrevious?:boolean, uid?: string }
+}

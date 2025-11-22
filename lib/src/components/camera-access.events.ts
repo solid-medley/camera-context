@@ -1,9 +1,10 @@
+import type { InternalMediaConstraints } from "../data-models/constraints"
 import type { UserMediaState } from "../data-models/device"
 import { eventType, returnNothing, returnType, returnVoid } from "./sandbox.events"
 
 const events = {
     initialized: { name: 'initialized',  type: eventType(), returns: returnNothing() },
-    requestPermission: { name: 'requestPermission',  type: eventType<MediaStreamConstraints>(), returns: returnType<UserMediaState>() },
+    requestPermission: { name: 'requestPermission',  type: eventType<InternalMediaConstraints>(), returns: returnType<UserMediaState>() },
     stopStream: { name: 'stopStream',  type: eventType(), returns: returnVoid() },
 } as const
 

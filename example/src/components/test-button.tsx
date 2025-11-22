@@ -29,8 +29,7 @@ export const TestButton: Component = () => {
         </div>
         <div>
             <p>This doesn't change the camera yet</p>
-            {/* Disable for now */}
-            <VideoDeviceSelector disabled />
+            <VideoDeviceSelector />
         </div>
     </>
 }

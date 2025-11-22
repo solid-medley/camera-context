@@ -3,6 +3,7 @@ import { useCamera } from '../camera-context';
 
 const defaultLabel = "No devices available";
 
+type OnChangeEvent = Parameters<JSX.ChangeEventHandler<HTMLSelectElement, Event>>[0]
 type SelectorElementProps = Omit<JSX.SelectHTMLAttributes<HTMLSelectElement>, 'multiple' | 'value'>;
 export type SelectorProps = SelectorElementProps & {
     notAvailableLabel?: string
@@ -11,7 +12,7 @@ export type SelectorProps = SelectorElementProps & {
 }
 export const VideoDeviceSelector: Component<SelectorProps> = (props) => {
 
-    const { mediaDevices, active, stream, camera } = useCamera();
+    const { mediaDevices, active, stream, camera, changeVideoInput } = useCamera();
     const { notAvailableLabel, notEnumeratedLabel, noDevicesLabel, ...elementProps } = props;
 
     const disabled = createMemo(() => {
@@ -41,8 +42,21 @@ export const VideoDeviceSelector: Component<SelectorProps> = (props) => {
         })
     }, [mediaDevices, deviceId, disabled])
 
+    async function onChange(e: OnChangeEvent) {
+        if (e.target.value === '0') return
+        if (e.target.value === deviceId()) return
+        const selectedValue = e.target.value
+
+        await changeVideoInput(selectedValue)
+    }
+
     const selector = createMemo(
-        () => <select {...elementProps} name={elementProps.name ?? 'camera'} disabled={disabled()} value={deviceId().toString()}>
+        () => <select {...elementProps} 
+            name={elementProps.name ?? 'camera'} 
+            disabled={disabled()} 
+            value={deviceId()}
+            onChange={onChange}
+        >
             {options()}
         </select>,
         [options, disabled, deviceId]

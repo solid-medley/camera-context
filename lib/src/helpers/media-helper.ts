@@ -15,27 +15,13 @@ function getLocalStorageName(appName: string, key: string) {
 	return `${key}@${appName}`
 }
 
-function getStoredCameraId(appName: string) {
+export function getStoredCameraId(appName: string) {
 	return localStorage.getItem(getLocalStorageName(appName, 'camera')) ?? undefined
 }
 
-function storeCameraId(appName: string, id: string | 0 | undefined) {
+export function storeCameraId(appName: string, id: string | 0 | undefined) {
 	if (!id) return localStorage.removeItem(getLocalStorageName(appName, 'camera'))
 	return localStorage.setItem(getLocalStorageName(appName, 'camera'), id)
-}
-
-function combineConstraints(constraints: MediaStreamConstraints, deviceId?: string | undefined): MediaStreamConstraints {
-	return {
-		...constraints,
-		video: {
-			...constraints.video as MediaTrackConstraints,
-			deviceId: {
-				// We store the camera, if audio is available it's almost always the same device.
-				// If separate audio is necessary you may file a feature request
-				exact: deviceId
-			}
-		}
-	}
 }
 
 export async function getMediaDeviceList(): Promise<DeviceResult> {
@@ -63,16 +49,12 @@ export async function getMediaDeviceList(): Promise<DeviceResult> {
 type RequestResult = [permission: MediaPermission, camera?: Camera | undefined, stream?: MediaStream | undefined];
 export async function requestMediaPermission(constraints: MediaStreamConstraints, appName: string) : Promise<UserMediaState> {
 	
-
-	const storedCamera = getStoredCameraId(appName)
-	const combinedConstraints = combineConstraints(constraints, storedCamera)
-
-	const [permission, camera, stream] = await requestMediaPermissions(combinedConstraints)
+	const [permission, camera, stream] = await requestMediaPermissions(constraints)
 		.then(async (success) => {
 			// @ts-expect-error // TODO figure out when this happens
 			if (!success) return ['denied-unknown'] as RequestResult
 
-			const [camera, stream] = await getCamera(combinedConstraints, appName)
+			const [camera, stream] = await getCamera(constraints, appName)
 			return [
 				'granted', 
 				camera, 
@@ -84,7 +66,8 @@ export async function requestMediaPermission(constraints: MediaStreamConstraints
 	return {
 		permission,
 		camera,
-		stream
+		stream,
+		usedConstraints: constraints
 	}
 }
 
@@ -137,21 +120,15 @@ function handleMediaPermissionsError(err: MediaPermissionsError, appName: string
 }
 
 type CameraResult = [camera: Camera, stream?: MediaStream | undefined]
-async function getCamera(constraints: MediaStreamConstraints, appName: string, id?: string): Promise<CameraResult> {
+async function getCamera(constraints: MediaStreamConstraints, appName: string): Promise<CameraResult> {
 
-	const storedCamera = getStoredCameraId(appName)
-	const requestedCamera = id ?? storedCamera ?? undefined
-	const deviceConstraints = combineConstraints(constraints, requestedCamera);
-
-	const mediaStream = await navigator.mediaDevices.getUserMedia(deviceConstraints)
+	const mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
 		.catch(error => {
 			if (error.name === 'NotReadableError') {
 				if (features.DEBUG_ERROR_ALERT) alert('NOTREADABLE \n' + errorToString(error))
-				// Sometimes the browser doesn't close the stream on mobile devices
-				// To solve this we store and redirect.
-				// TODO: see how this works in iframe
+				// This no longer seems to happen inside of the iframe
+				// TODO: Needs more testing
 				debugger;
-				storeCameraId(appName, requestedCamera)
 				throw error
 			}
 			const [result] = handleMediaPermissionsError(error as MediaPermissionsError, appName)
@@ -161,7 +138,7 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 
 	if (!mediaStream) return [{
 		uid: await createDeviceUid(undefined),
-		deviceId: requestedCamera!,
+		deviceId: undefined,
 		label: '?',
 		facing: 'loading',
 		name: '',
@@ -169,9 +146,8 @@ async function getCamera(constraints: MediaStreamConstraints, appName: string, i
 	}]
 
 	if (!mediaStream.active || !mediaStream.getTracks()) {
-		storeCameraId(appName, requestedCamera!)
 		return [{
-			uid: requestedCamera!,
+			uid: await createDeviceUid(undefined),
 			label: 'X',
 			facing: 'loading',
 			name: 'X',
