@@ -1,6 +1,5 @@
 import { Accessor, Component, createEffect, createMemo, createSignal, JSX } from 'solid-js';
 import { useCamera } from '../camera-context';
-import { StoppableStream } from '../data-models/device';
 import { createAbortSignal } from '../helpers/create-abort';
 
 type VideoElementProps = Omit<JSX.VideoHTMLAttributes<HTMLVideoElement>, 'src' | 'srcObject' | 'ref' | 'loop'>;
@@ -33,7 +32,7 @@ const ContextVideoPlayer: Component<ContextVideoPlayerProps> = ({ elementProps }
     return <StreamPlayer stream={stream} elementProps={elementProps} />
 }
 export type StreamPlayerProps = {
-    stream: Accessor<StoppableStream | MediaStream | undefined>
+    stream: Accessor<MediaStream | undefined>
     elementProps: VideoElementProps
 }
 const StreamPlayer: Component<StreamPlayerProps> = ({ stream, elementProps }) => {

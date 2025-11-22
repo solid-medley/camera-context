@@ -53,7 +53,7 @@ export default sandboxModule<MediaAccessManagerProps>(import.meta, async ({
         if (userMediaResult.stream) {
 
             mediaStream = userMediaResult.stream;
-            postStream(Object.assign(userMediaResult.stream, { stopped: false }))
+            postStream(userMediaResult.stream)
 
             await sendCallback(parent, 'requestPermission', { ...userMediaResult, stream: undefined })
             return

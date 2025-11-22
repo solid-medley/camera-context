@@ -2,9 +2,8 @@
 export type UserMediaState = {
 	permission: MediaPermission
     camera: Camera | undefined
-	stream: StoppableStream | undefined
+	stream: MediaStream | undefined
 }
-export type StoppableStream = MediaStream & { stopped: boolean }
 
 export type Camera = {
 	uid: string | 0
