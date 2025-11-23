@@ -1,7 +1,6 @@
 import { Accessor, Component, createSignal, createUniqueId, onCleanup, onMount, Setter, } from "solid-js";
 import { createSandbox, SandBox } from "./sandbox";
 import type { UserMediaState } from "../data-models/device";
-import { forMilliseconds } from "../helpers/timeout";
 import { closeMediaStream } from "../helpers/stream-helper";
 import { createAbortSignal } from "../helpers/create-abort";
 import { features, retryAblePermissions } from "../constants";
@@ -79,7 +78,6 @@ export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ appName
                 return setState({ ...result } as UserMediaState);
             }
 
-            await forMilliseconds(1500, abortSignal);
             await requestPermission(constraints, false);
 
             return state()!;
