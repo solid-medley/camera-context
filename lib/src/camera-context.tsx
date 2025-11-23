@@ -1,19 +1,25 @@
 import { createContext, ParentComponent, useContext, children, createSignal, createMemo, Accessor, onMount, createEffect, on } from 'solid-js';
 import type { Camera, DeviceResult, MediaPermission, UserMediaState } from './data-models/device';
 import { MediaAccess, MediaAccessMarshal } from './components/media-access-marshal';
-import { faultyMediaPermissions, idleMediaPermissions } from './constants';
+import { defaultConfiguration, faultyMediaPermissions, idleMediaPermissions } from './constants';
 import { logModule } from './helpers/debug-helper';
 import { MediaConstraints } from './data-models/constraints';
 import { getMediaDeviceList } from './helpers/media-helper';
 import { createAbortSignal } from './helpers/create-abort';
+import { getBrowserMetadata, type BrowserMetadata } from './helpers/browser-metadata';
 
 // This needs to be a dynamic import for the bundler
 const { hasPermission, matchesPermission } = await import('./data-models/device')
 
 logModule('camera-context', import.meta)
 
+export type MediaContextConfiguration = {
+  noSignalText?: string | undefined,
+  noDevicesText?: string
+}
 type CameraContextProps = {
-  appName: string
+  appName: string,
+  configuration?: MediaContextConfiguration
 }
 type CameraContext = {
   requestPermission(constraints?: MediaConstraints): Promise<UserMediaState>
@@ -29,6 +35,9 @@ type CameraContext = {
 
   camera: Accessor<Camera | undefined>
   stream: Accessor<MediaStream | undefined>
+
+  configuration: MediaContextConfiguration,
+  browser: BrowserMetadata
 };
 
 const defaultConstraints: MediaStreamConstraints = {
@@ -51,7 +60,10 @@ const cameraContext = createContext<CameraContext>({
   faulted: () => false,
   
   camera: (): Camera | undefined => undefined,
-  stream: (): MediaStream | undefined => undefined
+  stream: (): MediaStream | undefined => undefined,
+
+  configuration: defaultConfiguration,
+  browser: getBrowserMetadata()
 })
 
 export const FaultyContext: ParentComponent<{ ctx: CameraContext }> = (props) => {
@@ -162,7 +174,20 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
       faulted,
 
       camera,
-      stream
+      stream,
+
+      // TODO merge configuration
+      configuration: !props.configuration 
+        ? defaultConfiguration
+        : { 
+          ...defaultConfiguration, 
+          noSignalText: Object.hasOwn(props.configuration, 'noSignalText')
+            ? props.configuration.noSignalText
+            : defaultConfiguration.noSignalText, 
+          noDevicesText: props.configuration.noDevicesText
+            ?? defaultConfiguration.noDevicesText
+        },
+      browser: getBrowserMetadata()
     }}>
       <MediaAccessMarshal appName={props.appName} ref={setState} />
       {testIllustration()}

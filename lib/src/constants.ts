@@ -1,3 +1,4 @@
+import { MediaContextConfiguration } from "./camera-context"
 import type { MediaPermission } from "./data-models/device"
 
 export const features = {
@@ -20,3 +21,8 @@ export const faultyMediaPermissions: MediaPermission[] = [
     'error:unexpected',
 ] as const
 export const idleMediaPermissions: MediaPermission = 'unknown' as const
+
+export const defaultConfiguration: MediaContextConfiguration = {
+    noSignalText: 'no-signal',
+    noDevicesText: "No devices available"
+}

@@ -1,19 +1,14 @@
 import { Component, createMemo, JSX } from 'solid-js';
 import { useCamera } from '../camera-context';
 
-const defaultLabel = "No devices available";
 
 type OnChangeEvent = Parameters<JSX.ChangeEventHandler<HTMLSelectElement, Event>>[0]
 type SelectorElementProps = Omit<JSX.SelectHTMLAttributes<HTMLSelectElement>, 'multiple' | 'value'>;
-export type SelectorProps = SelectorElementProps & {
-    notAvailableLabel?: string
-    notEnumeratedLabel?: string
-    noDevicesLabel?: string
-}
+export type SelectorProps = SelectorElementProps
 export const VideoDeviceSelector: Component<SelectorProps> = (props) => {
 
-    const { mediaDevices, active, stream, camera, changeVideoInput } = useCamera();
-    const { notAvailableLabel, notEnumeratedLabel, noDevicesLabel, ...elementProps } = props;
+    const { mediaDevices, active, stream, camera, changeVideoInput, configuration } = useCamera();
+    const { ...elementProps } = props;
 
     const disabled = createMemo(() => {
         if (props.disabled) return true;
@@ -31,10 +26,10 @@ export const VideoDeviceSelector: Component<SelectorProps> = (props) => {
 
     const options = createMemo(() => {
         const devices = mediaDevices();
-        if (devices == 'not-available') return <option value={0} label={notAvailableLabel ?? defaultLabel} selected />;
-        if (devices == 'not-enumerated') return <option value={0} label={notEnumeratedLabel ?? defaultLabel} selected />;
-        if (!devices.videoInput.length) return <option value={0} label={noDevicesLabel ?? defaultLabel} selected />;
-        if (!stream()) return <option value={0} label={noDevicesLabel ?? defaultLabel} selected />;
+        if (devices == 'not-available') return <option value={0} label={configuration.noDevicesText} selected />;
+        if (devices == 'not-enumerated') return <option value={0} label={configuration.noDevicesText} selected />;
+        if (!devices.videoInput.length) return <option value={0} label={configuration.noDevicesText} selected />;
+        if (!stream()) return <option value={0} label={configuration.noDevicesText} selected />;
 
         return devices.videoInput.map(device => {
             const selected = deviceId() === device.uid;

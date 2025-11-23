@@ -1,17 +1,26 @@
-import { Component, createMemo } from 'solid-js';
+import { Component, createMemo, JSX } from 'solid-js';
 import { useCamera } from '@solid-medley/camera-context';
-import { VideoPlayer } from '@solid-medley/camera-context/components';
+import { VideoDeviceSelector, VideoPlayer } from '@solid-medley/camera-context/components';
 
-// TODO figure out why this binding is necessary
+const noStreamStyle: JSX.CSSProperties = {
+    "object-fit": "cover"
+}
+
 export const TestVideo: Component = () => {
 
-    const { camera } = useCamera();
+    const { browser, stream } = useCamera();
+
 
     return <>
-        <p>{camera()?.name ?? 'no video stream'}</p>
+        <VideoDeviceSelector />
         <VideoPlayer muted style={{
             width: '100%',
-            "aspect-ratio": '1/1'
+            ...(!!stream() ? { } : noStreamStyle), 
+            "max-width": `500px`,
+            // TODO move to css with breakpoints
+            "aspect-ratio": browser.platform.type === 'desktop'
+                ? '16/9'
+                : '3/4'
         }}/>
     </>
 }

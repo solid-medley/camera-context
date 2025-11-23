@@ -27,9 +27,5 @@ export const TestButton: Component = () => {
             <button disabled={active() || has('pending')} onClick={getPermissionFront}>Request Face Cam</button>
             <button disabled={idle() || faulted() || has('pending')} onClick={stopStreaming}>Stop</button>
         </div>
-        <div>
-            <p>This doesn't change the camera yet</p>
-            <VideoDeviceSelector />
-        </div>
     </>
 }

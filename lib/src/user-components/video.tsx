@@ -38,8 +38,8 @@ export type StreamPlayerProps = {
 const StreamPlayer: Component<StreamPlayerProps> = ({ stream, elementProps }) => {
 
     const [ref, setRef] = createSignal<HTMLVideoElement>()    
-    const staticStream = createStaticStream();
-
+    const { configuration } = useCamera();
+    const staticStream = createStaticStream(configuration.noSignalText);
 
     createEffect(() => {
         console.log('stream', stream()?.id)
