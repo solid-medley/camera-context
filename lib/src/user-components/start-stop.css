@@ -4,28 +4,46 @@
   align-content: center;
   justify-content: flex-end;
   align-items: center;
+  padding: .2ex;;
+  width: 3ex;
 }
 
-.media-context.start-stop-icon-button span[aria-roledescription="icon"]  {
-  margin: 15%;
-}
-
-.media-context.start-stop-icon-button span[aria-roledescription="icon"]:nth-child(2)  {
-  width: 40%;
-  margin-top:-50%;
-  margin-right:-50%;
+.media-context.start-stop-icon-button button {
+  width: 100%;
+  aspect-ratio: 1/1;
   position: relative;
+  padding: .5ex;
+}
+.media-context.start-stop-icon-button button span {
+  display: flex;
+  aspect-ratio: 1/1;
+  margin: 0;
+}
+.media-context.start-stop-icon-button button span svg {
+  width: 100%;
+  display: flex;
+  aspect-ratio: 1/1;
+}
+.media-context.start-stop-icon-button button span:first-child {
+    flex-direction: column;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    /* // The icon isn't perfectly centered */
+    width: 95%;
+    margin-left: 5%;
 }
 
-.media-context.start-stop-icon-button span[aria-roledescription="icon"]:nth-child(2):before  {
-  content: '+';
+.media-context.start-stop-icon-button button span:last-child {
   position: absolute;
-  right: 70%;
+  width: 40%;
+  bottom: 0;
+  right: 0;
 }
 
-.media-context.start-stop-icon-button span[aria-roledescription="label"]  {
-  margin-top: -1ex;
-  margin-bottom: 1ex;
-  font-size: 1.3ex;
+.media-context.start-stop-icon-button span[aria-roledescription="label"] {
+  margin-top: .5ex;
+  font-size: .7ex;
+  font-weight: bold;
   text-transform: uppercase;
 }

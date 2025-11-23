@@ -66,22 +66,26 @@ export const StartStopIconButtonBase: Component<StartStopButtonProps> = ({
     return <>
         {/* Temp solution for TSUP issue, fix with vie lib */}
         <style innerHTML={style} />
-        <button
+        <label
             class='media-context start-stop-icon-button'
-            onClick={onClick}
-            disabled={!idle() && !active()}
             title={startStopAriaLabel()}
             aria-label={startStopAriaLabel()}
         >
-            <StartStopIcon
-                constraints={constraints} active={active}
-                CameraStartIcon={CameraStartIcon} MicStartIcon={MicStartIcon}
-                CameraStopIcon={CameraStopIcon} MicStopIcon={MicStopIcon}
-            />
+            <button
+                onClick={onClick}
+                disabled={!idle() && !active()}
+            >
+                <StartStopIcon
+                    constraints={constraints} active={active}
+                    CameraStartIcon={CameraStartIcon} MicStartIcon={MicStartIcon}
+                    CameraStopIcon={CameraStopIcon} MicStopIcon={MicStopIcon}
+                />
+            </button>
+
             <span aria-roledescription="label">
                 {startStopText()}
             </span>
-        </button>
+        </label>
     </>
 
 }
