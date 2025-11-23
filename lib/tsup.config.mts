@@ -23,6 +23,10 @@ export default defineConfig({
 	treeshake: true,
 	splitting: true,
 	minify: true,
+	loader: {
+		".svg": "text", // raw svg
+		".css": "text", // raw css
+	},
 
 	esbuildOptions(options) {
 		options.jsx = "preserve"; // keep JSX untouched

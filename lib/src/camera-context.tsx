@@ -40,12 +40,12 @@ type CameraContext = {
   browser: BrowserMetadata
 };
 
-const defaultConstraints: MediaStreamConstraints = {
+export const defaultConstraints: Readonly<MediaStreamConstraints> = Object.freeze({
   audio: true,
   video: {
     facingMode: 'environment'
   }
-}
+})
 
 const cameraContext = createContext<CameraContext>({
   requestPermission: () => Promise.reject<UserMediaState>(new Error("Not initialized")),

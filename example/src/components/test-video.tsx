@@ -1,6 +1,6 @@
-import { Component, createMemo, JSX } from 'solid-js';
+import { Component, JSX } from 'solid-js';
 import { useCamera } from '@solid-medley/camera-context';
-import { VideoDeviceSelector, VideoPlayer } from '@solid-medley/camera-context/components';
+import { VideoDeviceSelector, VideoPlayer, StartStopIconButton } from '@solid-medley/camera-context/components';
 
 const noStreamStyle: JSX.CSSProperties = {
     "object-fit": "cover"
@@ -12,7 +12,7 @@ export const TestVideo: Component = () => {
 
 
     return <>
-        <VideoDeviceSelector />
+        <VideoDeviceSelector /> <StartStopIconButton />
         <VideoPlayer muted style={{
             width: '100%',
             ...(!!stream() ? { } : noStreamStyle), 

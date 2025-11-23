@@ -16,6 +16,8 @@ export const DebugInfo: Component = () => {
                 id: ctx.stream()?.id,
                 active: ctx.stream()?.active,
             },
+            browser: ctx.browser,
+            configuration: ctx.configuration,
             devices: typeof devices === 'string' 
                 ? devices
                 : {

@@ -1,0 +1,31 @@
+.media-context.start-stop-icon-button {
+  display: inline-flex;
+  flex-direction: column;
+  align-content: center;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.media-context.start-stop-icon-button span[aria-roledescription="icon"]  {
+  margin: 15%;
+}
+
+.media-context.start-stop-icon-button span[aria-roledescription="icon"]:nth-child(2)  {
+  width: 40%;
+  margin-top:-50%;
+  margin-right:-50%;
+  position: relative;
+}
+
+.media-context.start-stop-icon-button span[aria-roledescription="icon"]:nth-child(2):before  {
+  content: '+';
+  position: absolute;
+  right: 70%;
+}
+
+.media-context.start-stop-icon-button span[aria-roledescription="label"]  {
+  margin-top: -1ex;
+  margin-bottom: 1ex;
+  font-size: 1.3ex;
+  text-transform: uppercase;
+}

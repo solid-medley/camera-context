@@ -31,3 +31,7 @@ code {
 #root {
   margin: .5ex 2.4ex ;
 }
+
+video {
+  border-radius: .4ex .4ex .4ex .4ex;
+}
