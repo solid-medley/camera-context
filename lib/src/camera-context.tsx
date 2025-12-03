@@ -1,12 +1,10 @@
-import { createContext, ParentComponent, useContext, children, createSignal, createMemo, Accessor, onMount, createEffect, on } from 'solid-js';
-import type { Camera, DeviceResult, MediaPermission, UserMediaState } from './data-models/device';
+import { createContext, ParentComponent, useContext, children, createSignal, createMemo, Accessor } from 'solid-js';
+import type { Camera, MediaDevices, MediaPermission, UserMediaState } from './data-models/device';
 import { MediaAccess, MediaAccessMarshal } from './components/media-access-marshal';
 import { defaultConfiguration, faultyMediaPermissions, idleMediaPermissions } from './constants';
 import { logModule } from './helpers/debug-helper';
 import { MediaConstraints } from './data-models/constraints';
-import { getMediaDeviceList } from './helpers/media-helper';
-import { createAbortSignal } from './helpers/create-abort';
-import { getBrowserMetadata, type BrowserMetadata } from './helpers/browser-metadata';
+import { type BrowserMetadata, getBrowserMetadata } from './helpers/browser-metadata';
 
 // This needs to be a dynamic import for the bundler
 const { hasPermission, matchesPermission } = await import('./data-models/device')
@@ -25,7 +23,7 @@ type CameraContext = {
   requestPermission(constraints?: MediaConstraints): Promise<UserMediaState>
   stopStreaming(): Promise<void>
   changeVideoInput(deviceId: string): Promise<void>
-  mediaDevices: Accessor<DeviceResult>,
+  mediaDevices: Accessor<MediaDevices>,
   
   permission: Accessor<MediaPermission | undefined>
   has(...permissionsToCheck: MediaPermission[]): boolean;
@@ -51,7 +49,7 @@ const cameraContext = createContext<CameraContext>({
   requestPermission: () => Promise.reject<UserMediaState>(new Error("Not initialized")),
   stopStreaming: () => Promise.reject<void>(new Error("Not initialized")),
   changeVideoInput: () => Promise.reject<void>(new Error("Not initialized")),
-  mediaDevices: (): DeviceResult => 'not-enumerated',
+  mediaDevices: (): MediaDevices => 'not-enumerated',
   
   permission: (): MediaPermission => 'unknown',
   has: () => false,
@@ -104,29 +102,10 @@ export const CameraContextProvider: ParentComponent<CameraContextProps> = (props
     () => state()?.stream,
     [state]
   )
-
-  /// TODO other component
-  const [signal] = createAbortSignal();
-  const [mediaDevices, setMediaDevices] = createSignal<DeviceResult>('not-enumerated');
-  onMount(async () => {
-    setMediaDevices(await getMediaDeviceList());
-    if (mediaDevices() === 'not-available') return;
-
-    addEventListener("devicechange", async () => { setMediaDevices(await getMediaDeviceList()); }, { signal })
-  })
-  
-/** https://stackoverflow.com/a/78283918 */
-  createEffect(on(permission, async () => {
-    setMediaDevices(await getMediaDeviceList());
-  }, { defer: true }))
-
-  /// TEMP
-
-  createEffect(() => {
-    console.log('mediaDevices', mediaDevices())
-  }, [mediaDevices])
-
-  ///
+  const mediaDevices = createMemo(
+    () => state()?.mediaDevices ?? 'not-enumerated',
+    [state]
+  )
   
   const testIllustration = createMemo(() => {
 

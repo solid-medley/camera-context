@@ -2,6 +2,7 @@ import { MediaConstraints } from "./constraints"
 
 export type UserMediaState = {
 	permission: MediaPermission
+	mediaDevices: MediaDevices
     camera: Camera | undefined
 	stream: MediaStream | undefined
 	usedConstraints: MediaStreamConstraints | MediaConstraints
@@ -24,7 +25,7 @@ export type FlatMediaDeviceInfo =
 		readonly uid: string | 0,
 		readonly capabilities: MediaTrackCapabilities
 	}
-export type DeviceResult = 
+export type MediaDevices = 
 	// not enumerated
 	| 'not-enumerated'
 	// No enumerate devices

@@ -7,6 +7,7 @@ import miStartIcon from './icons/microphone.svg'
 import cameraStopIcon from './icons/video-slash.svg'
 import micStopIcon from './icons/microphone-slash.svg'
 
+import controlStyle from "./media-context.controls.css"
 import style from "./start-stop.css"
 
 export type StartStopIconButtonProps = {
@@ -64,7 +65,8 @@ export const StartStopIconButtonBase: Component<StartStopButtonProps> = ({
     }
 
     return <>
-        {/* Temp solution for TSUP issue, fix with vie lib */}
+        {/* Temp solution for TSUP issue, fix with vite lib */}
+        <style innerHTML={controlStyle} />
         <style innerHTML={style} />
         <label
             class='media-context start-stop-icon-button'
@@ -82,7 +84,7 @@ export const StartStopIconButtonBase: Component<StartStopButtonProps> = ({
                 />
             </button>
 
-            <span aria-roledescription="label">
+            <span aria-roledescription="input-label">
                 {startStopText()}
             </span>
         </label>

@@ -1,6 +1,8 @@
 import { Component, createMemo, JSX } from 'solid-js';
 import { useCamera } from '../camera-context';
 
+import controlStyle from "./media-context.controls.css"
+import style from "./selector.css"
 
 type OnChangeEvent = Parameters<JSX.ChangeEventHandler<HTMLSelectElement, Event>>[0]
 type SelectorElementProps = Omit<JSX.SelectHTMLAttributes<HTMLSelectElement>, 'multiple' | 'value'>;
@@ -9,6 +11,15 @@ export const VideoDeviceSelector: Component<SelectorProps> = (props) => {
 
     const { mediaDevices, active, stream, camera, changeVideoInput, configuration } = useCamera();
     const { ...elementProps } = props;
+
+    // TODO Label
+    const selectorAriaLabel = 'Video input device selector';
+    const selectorLabelText = createMemo(() => {
+        // TODO label
+        if (active()) return "Select video input device"
+        return "Video input not active"
+
+    }, [active]);
 
     const disabled = createMemo(() => {
         if (props.disabled) return true;
@@ -57,5 +68,20 @@ export const VideoDeviceSelector: Component<SelectorProps> = (props) => {
         [options, disabled, deviceId]
     )
 
-    return <>{selector()}</>
+    return <>
+        {/* Temp solution for TSUP issue, fix with vite lib */}
+        <style innerHTML={controlStyle} />
+        <style innerHTML={style} />
+        <label
+            class='media-context device-selector'
+            title={selectorLabelText()}
+            aria-label={`${selectorAriaLabel}: ${selectorLabelText()}`}
+        >
+            {selector()}
+
+            <span aria-roledescription="input-label">
+                {selectorLabelText()}
+            </span>
+        </label>
+    </>
 }

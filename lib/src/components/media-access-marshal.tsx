@@ -1,6 +1,6 @@
 import { Accessor, Component, createSignal, createUniqueId, onCleanup, onMount, Setter, } from "solid-js";
 import { createSandbox, SandBox } from "./sandbox";
-import type { UserMediaState } from "../data-models/device";
+import type { MediaDevices, UserMediaState } from "../data-models/device";
 import { closeMediaStream } from "../helpers/stream-helper";
 import { createAbortSignal } from "../helpers/create-abort";
 import { features, retryAblePermissions } from "../constants";
@@ -10,7 +10,7 @@ import type{ InternalMediaConstraints } from "../data-models/constraints";
 // These imports HAVE to be type imports for the bundler
 import type { MediaAccessManagerConfig, MediaAccessManagerProps } from './media-access-manager';
 // These imports are await imports on purpose for the bundler
-const { send } = await import('./sandbox.helpers')
+const { registerChildHandlers, forwardEvent, send } = await import("./sandbox.helpers");
 const { hasPermission, matchesPermission } = await import('../data-models/device')
 const wrapperModule = (await import('./media-access-manager')).default;
 
@@ -35,6 +35,17 @@ export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ appName
     const [state, setState] = createSignal<UserMediaState>();
     const [mediaStream, setMediaStream] = createSignal<MediaStream>();
     const [usedConstraints, setConstraints] = createSignal<InternalMediaConstraints>();
+    
+    const [mediaDevices, setMediaDevices] = createSignal<MediaDevices>('not-enumerated');
+    function updateMediaDevices(result: MediaDevices) {
+        setState(s => {
+            const devices = setMediaDevices(result);;
+            if (!s) return s;
+
+            s.mediaDevices = devices;
+            return s
+        })
+    }
 
     const [sandbox, setSandbox] = createSignal<SandBox>()
     const uid = createUniqueId()
@@ -128,7 +139,8 @@ export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ appName
             permission: 'unknown',
             camera: undefined,
             stream: undefined,
-            usedConstraints: usedConstraints() ?? { }
+            usedConstraints: usedConstraints() ?? { },
+            mediaDevices: mediaDevices()
         }));
         setRef({
             state: state as Accessor<UserMediaState>,
@@ -136,6 +148,11 @@ export const MediaAccessMarshal: Component<MediaAccessMarshalProps> = ({ appName
             stopStreaming,
             changeVideoInput
         });
+
+        
+        registerChildHandlers(parent, abortSignal, async (event) => {
+            await forwardEvent(event, 'updateMediaDevices', updateMediaDevices)
+        })
     })
 
     onCleanup(async () => {

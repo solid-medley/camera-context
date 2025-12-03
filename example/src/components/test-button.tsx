@@ -1,6 +1,5 @@
 import { Component } from 'solid-js';
 import { useCamera } from '@solid-medley/camera-context';
-import { VideoDeviceSelector } from '@solid-medley/camera-context/components';
 
 export const TestButton: Component = () => {
 

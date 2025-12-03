@@ -1,0 +1,36 @@
+.media-context.device-selector {
+  display: inline-flex;
+  flex-direction: column;
+  align-content: center;
+  justify-content: flex-end;
+  align-items: center;
+  flex: 1;
+}
+
+.media-context.device-selector select {
+  width: 100%;
+  font-size: 1em;
+  line-height: 1;         /* prevents auto expansion */
+  box-sizing: border-box; /* consistent sizing */
+
+  display: inline-flex;
+  flex-direction: column;
+  align-content: center;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: left;     
+  text-align-last: left; 
+  padding: .3ex .3ex 0 0;
+  height: 3ex; 
+}
+
+.media-context.device-selector select > option{
+  width: 100%;
+  font-size: 1em;
+  line-height: 1;         /* prevents auto expansion */
+  box-sizing: border-box; /* consistent sizing */
+
+  text-align: left;
+  padding: 1ex;
+  height: 3ex;
+}

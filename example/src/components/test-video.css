@@ -1,0 +1,13 @@
+.video-selector {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-content: flex-start;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1ex;
+    margin-top: 1ex;
+    margin-bottom: 1ex;
+    /* Equal to video */
+    max-width: 500px;
+}

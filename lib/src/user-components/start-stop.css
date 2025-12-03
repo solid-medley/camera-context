@@ -4,7 +4,6 @@
   align-content: center;
   justify-content: flex-end;
   align-items: center;
-  padding: .2ex;;
   width: 3ex;
 }
 
@@ -34,16 +33,9 @@
     margin-left: 5%;
 }
 
-.media-context.start-stop-icon-button button span:last-child {
+.media-context.start-stop-icon-button button span:nth-child(2) {
   position: absolute;
-  width: 40%;
-  bottom: 0;
-  right: 0;
-}
-
-.media-context.start-stop-icon-button span[aria-roledescription="label"] {
-  margin-top: .5ex;
-  font-size: .7ex;
-  font-weight: bold;
-  text-transform: uppercase;
+  width: 30%;
+  bottom: .4ex;
+  left: .4ex;
 }

@@ -1,0 +1,11 @@
+
+.media-context label {
+  margin: .5ex 0 .5ex 0;
+  padding: 1ex 0 1ex 0;
+}
+.media-context span[aria-roledescription="input-label"] {
+  margin-top: .5ex;
+  font-size: .7ex;
+  font-weight: bold;
+  text-transform: uppercase;
+}

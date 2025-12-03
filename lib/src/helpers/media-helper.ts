@@ -4,7 +4,7 @@ import {
 	MediaPermissionsErrorType,
 	requestMediaPermissions
 } from 'mic-check'
-import { Camera, DeviceResult, FlatMediaDeviceInfo, MediaPermission, UserMediaState } from '../data-models/device'
+import { Camera, MediaDevices, FlatMediaDeviceInfo, MediaPermission, UserMediaState } from '../data-models/device'
 import { getBrowserMetadata } from './browser-metadata'
 import { errorToString, logModule } from './debug-helper';
 import { features } from '../constants';
@@ -24,7 +24,7 @@ export function storeCameraId(appName: string, id: string | 0 | undefined) {
 	return localStorage.setItem(getLocalStorageName(appName, 'camera'), id)
 }
 
-export async function getMediaDeviceList(): Promise<DeviceResult> {
+export async function getMediaDeviceList(): Promise<MediaDevices> {
 	if (!navigator.mediaDevices?.enumerateDevices) return 'not-available'
 
 	try {
@@ -63,11 +63,13 @@ export async function requestMediaPermission(constraints: MediaStreamConstraints
 		})
 		.catch((err: MediaPermissionsError) => [handleMediaPermissionsError(err, appName)] as RequestResult)
 		
+	const mediaDevices = await getMediaDeviceList()
 	return {
 		permission,
 		camera,
 		stream,
-		usedConstraints: constraints
+		usedConstraints: constraints,
+		mediaDevices
 	}
 }
 

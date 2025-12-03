@@ -3,7 +3,7 @@ import { getMediaDeviceList, requestMediaPermission, storeCameraId } from '../he
 import { sandboxModule } from "./sandbox.module";
 
 // These imports need to be await import for the bundler
-const { registerChildHandlers, forwardEvent, sendCallback } = await import("./sandbox.helpers");
+const { registerChildHandlers, forwardEvent, sendCallback, send } = await import("./sandbox.helpers");
 const { logModule }  = await import('../helpers/debug-helper');
 const { closeMediaStream } = await import("../helpers/stream-helper");
 const { matchesPermission } = await import("../data-models/device");
@@ -108,4 +108,11 @@ export default sandboxModule<MediaAccessManagerProps>(import.meta, async ({
         await closeMediaStream(mediaStream)
         mediaStream = undefined;
     }
+
+    async function enumerateMediaDevices() {
+        const devices = await getMediaDeviceList()
+        await send(parent, 'updateMediaDevices', devices)
+    }
+
+    addEventListener("devicechange", enumerateMediaDevices, { signal: abortSignal })
 });

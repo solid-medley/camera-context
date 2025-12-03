@@ -4,7 +4,7 @@ import bowser, { type Parser } from 'bowser'
 
 export type BrowserMetadata = Parser.ParsedResult & {
 	platform: Parser.ParsedResult['platform'] & {
-		type: 'desktop' | string
+		type: 'desktop' | 'mobile' | string
 	}
 };
 let meta: BrowserMetadata | undefined;
