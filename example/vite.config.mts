@@ -1,4 +1,5 @@
 import { gitHubSpaConfig } from "@quick-vite/gh-pages-spa/config";
+import { solidVendorChunks } from "@quick-vite/gh-pages-spa/solidjs/vite";
 import solid from 'vite-plugin-solid'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 
@@ -12,15 +13,7 @@ export default gitHubSpaConfig(packageJson, {
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'app': [
-            'solid-js',
-            'solid-js/web',
-            'solid-js/jsx-runtime',
-            '@solidjs/router',
-            '@quick-vite/gh-pages-spa/solidjs'
-          ]
-        }
+        manualChunks: solidVendorChunks
       }
     },
     target: 'esnext',

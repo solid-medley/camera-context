@@ -15,7 +15,7 @@
   "license": "MIT",
   "packageManager": "pnpm@10.22.0",
   "dependencies": {
-    "@quick-vite/gh-pages-spa": "^7.0.2",
+    "@quick-vite/gh-pages-spa": "^7.1.0",
     "@solid-medley/camera-context": "workspace:^",
     "@solidjs/router": "^0.15.4",
     "solid-js": "^1.9.10"

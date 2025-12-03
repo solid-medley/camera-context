@@ -14,7 +14,7 @@ function createFakeStaticStream(noSignalText: string, streamActive: Accessor<boo
     canvas.height = height;
     canvas.style.display = 'none'
 
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
 
     ctx.fillStyle = '#333';
     ctx.fillRect(0, 0, width, height);

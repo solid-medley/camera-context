@@ -18,8 +18,8 @@ importers:
   example:
     dependencies:
       '@quick-vite/gh-pages-spa':
-        specifier: ^7.0.2
-        version: 7.0.2(rollup@4.53.2)(vite@7.2.2(@types/node@24.10.1)(lightningcss@1.30.2))
+        specifier: ^7.1.0
+        version: 7.1.0(rollup@4.53.2)(vite@7.2.2(@types/node@24.10.1)(lightningcss@1.30.2))
       '@solid-medley/camera-context':
         specifier: workspace:^
         version: link:../lib
@@ -505,8 +505,8 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-  '@quick-vite/gh-pages-spa@7.0.2':
-    resolution: {integrity: sha512-Tj2tQL6hzpjMEQZcZzG+3QFa3xvhFV+DSvuuIbrUEftaviFgigkfs+JtOAcZ70u3zPkGG+Gz8jKDAccBDnq0Dw==}
+  '@quick-vite/gh-pages-spa@7.1.0':
+    resolution: {integrity: sha512-j2OKOZu3xQC7/USR3xhTsAtJWylqDPtPG+Y/GhcuwvDDFJOmMbiabcM0hddSaDntdpLT9+yIiwnMBPjdLl1gJw==}
     peerDependencies:
       vite: ^7.2.2
 
@@ -1934,7 +1934,7 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@quick-vite/gh-pages-spa@7.0.2(rollup@4.53.2)(vite@7.2.2(@types/node@24.10.1)(lightningcss@1.30.2))':
+  '@quick-vite/gh-pages-spa@7.1.0(rollup@4.53.2)(vite@7.2.2(@types/node@24.10.1)(lightningcss@1.30.2))':
     dependencies:
       vite: 7.2.2(@types/node@24.10.1)(lightningcss@1.30.2)
       vite-plugin-html-config: 2.0.2(vite@7.2.2(@types/node@24.10.1)(lightningcss@1.30.2))
