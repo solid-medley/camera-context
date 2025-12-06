@@ -1,0 +1,79 @@
+.audio-level {
+  height: 2ex;
+  margin: 1ex 10ex;
+  position: relative;
+  pointer-events: none;
+  --bar-gap: .2ex;
+  --green: #00ff55;
+  --orange: #ffaa00;
+  --red: #ff3300;
+  --inactive: #6e6e6e;
+  --inactive-level-brightness: 0.3;
+}
+
+/* Gray out all bars if not active */
+.audio-level[data-active="false"] .bar {
+  background-color: var(--inactive);
+  filter: none; /* ignore brightness filter */
+}
+
+/* Active bars styling */
+.audio-level[data-active="true"] .bar.green {
+  background-color: var(--green);
+}
+.audio-level[data-active="true"] .bar.orange {
+  background-color: var(--orange);
+}
+.audio-level[data-active="true"] .bar.red {
+  background-color: var(--red);
+}
+
+/* Inactive individual bars when active */
+.audio-level[data-active="true"] .bar[data-active-level="false"] {
+  filter: brightness(var(--inactive-level-brightness));
+}
+
+/* Bars container and peak hold */
+.audio-level .bars,
+.audio-level .peak-hold {
+  display: flex;
+  flex-direction: row;
+  gap: var(--bar-gap);
+  align-items: center;
+  justify-content: space-evenly;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 2;
+}
+
+/* Bars */
+.audio-level .bar,
+.audio-level .peak-bar {
+  flex: 1 1 0;
+  width: 0;
+  height: 100%;
+  border-radius: 2px;
+  box-sizing: border-box;
+  transition: filter 60ms linear;
+}
+
+/* Peak hold */
+.audio-level .peak-bar {
+  /* Slightly bigger than the bar, min 1px border */
+  --peak-width: max(0.15ex, 1px);
+
+  border: var(--peak-width) solid transparent;
+  border-radius: 3px; /* slightly larger than bars */
+  height: calc(100% + var(--peak-width));
+  margin: calc(var(--peak-width) * -2) calc(var(--peak-width) * -.3); /* center the border */
+  transition: border-color 150ms linear, opacity 150ms linear;
+  opacity: 0;
+}
+
+.audio-level .peak-bar[data-active-level="true"] {
+  border-color: black;
+  opacity: 1;
+}
